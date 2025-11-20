@@ -47,7 +47,6 @@ public class Dash : MonoBehaviour
         isDashing = true;
         dashTimer = dashTime;
         dashCooldownTimer = dashCooldownTime + dashTime;
-        rb.velocity = new Vector2(dashForce * pMov.facingDir, 0);
     }
 
     public void DashEnd()

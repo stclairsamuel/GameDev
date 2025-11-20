@@ -31,6 +31,7 @@ public class PlayerTracker : MonoBehaviour
         {
             pMov.enabled = false;
             externalVel.x = 0;
+            dash.rb.velocity = new Vector2(dash.dashForce * pMov.facingDir, 0);
         }
         else
         {
