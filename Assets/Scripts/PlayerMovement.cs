@@ -39,23 +39,27 @@ public class PlayerMovement : MonoBehaviour
 
     public PlayerTracker pTracker;
 
+    public Vector2 myScale;
+
+    public GameObject colliderLeft;
+    public GameObject colliderRight;
+
     // Start is called before the first frame update
     void Start()
     {
-        
+        transform.localScale = new Vector3 (myScale.x, myScale.y, transform.localScale.z);
     }
 
     // Update is called once per frame
     void Update()
     {
+        myPos = transform.position;
+
         activeMoveSpeed = baseMoveSpeed;
 
         if (xInput != 0) { facingDir = xInput; }
 
-        myPos = transform.position;
-        grounded = Physics2D.Raycast(myPos, -Vector3.up, 0.6f, ground);
-
-        Gravity();
+        CheckGround();
         
         //jump start
 
@@ -120,17 +124,43 @@ public class PlayerMovement : MonoBehaviour
 
     void Gravity()
     {
-        if (!grounded)
+        yVel -= gravity * Time.deltaTime;
+    }
+
+    void CheckGround()
+    {
+        Vector3 width = new Vector3(myScale.x/2f, 0, 0);
+        float boxBottom = transform.position.y - myScale.y/2f;
+
+        RaycastHit2D groundLeft = Physics2D.Raycast(myPos - width, -Vector2.up, 100f, ground);
+        RaycastHit2D groundRight = Physics2D.Raycast(myPos + width, -Vector2.up, 100f, ground);
+
+        float highestGround = Mathf.Max(groundLeft.point.y, groundRight.point.y);
+        float projectedY = boxBottom + yVel * Time.deltaTime;
+
+        Debug.Log("Highest Ground: " + highestGround.ToString());
+        Debug.Log("Projected Y: " + (projectedY).ToString());
+
+        grounded = (projectedY <= highestGround);
+
+        if (grounded)
         {
-            yVel -= gravity * Time.deltaTime;
+            transform.position = new Vector3(myPos.x, highestGround + myScale.y/2f, myPos.z);
+            yVel = 0;
         }
-        else if (yVel < 0)
+        else
         {
-            yVel = -2f;
+            Gravity();
         }
     }
 
+    void CheckWalls()
+    {
+        ColliderCheck right = colliderRight.GetComponent<ColliderCheck>();
+        ColliderCheck left = colliderLeft.GetComponent<ColliderCheck>();
 
+
+    }
 
     void Timers()
     {
