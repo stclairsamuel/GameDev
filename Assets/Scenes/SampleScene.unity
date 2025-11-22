@@ -2826,7 +2826,7 @@ Tilemap:
   m_AnimationFrameRate: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Origin: {x: -18, y: -6, z: 0}
-  m_Size: {x: 34, y: 34, z: 1}
+  m_Size: {x: 57, y: 34, z: 1}
   m_TileAnchor: {x: 0.5, y: 0.5, z: 0}
   m_TileOrientation: 0
   m_TileOrientationMatrix:
@@ -4652,9 +4652,25 @@ PrefabInstance:
       value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287135, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: gravity
+      value: 28
+      objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287135, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: timeStop
       value: 
       objectReference: {fileID: 275539870}
+    - target: {fileID: 3538810331697287135, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: myScale.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287135, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: myScale.y
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287135, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: ground.m_Bits
+      value: 256
+      objectReference: {fileID: 0}
     - target: {fileID: 8549734021083491384, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: m_IsTrigger
       value: 0

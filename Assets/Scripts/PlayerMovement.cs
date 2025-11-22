@@ -4,10 +4,6 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-//test123
-
-    public float gravity;
-
     public Rigidbody2D rb;
 
     public float xVel;
@@ -19,10 +15,6 @@ public class PlayerMovement : MonoBehaviour
     public Vector3 myPos;
 
     public KeyCode jumpKey = KeyCode.Space;
-
-    public bool grounded;
-    public LayerMask ground;
-    public RaycastHit2D groundCheck;
 
     public bool canJump;
     public bool isJumping;
@@ -47,7 +39,7 @@ public class PlayerMovement : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        transform.localScale = new Vector3 (myScale.x, myScale.y, transform.localScale.z);
+        
     }
 
     // Update is called once per frame
@@ -58,12 +50,10 @@ public class PlayerMovement : MonoBehaviour
         activeMoveSpeed = baseMoveSpeed;
 
         if (xInput != 0) { facingDir = xInput; }
-
-        CheckGround();
         
         //jump start
 
-        if (grounded) { canJump = true; }
+        if (pTracker.grounded) { canJump = true; }
         else { canJump = false; }
 
         if (jumpTimer == 0) { isJumping = false; }
@@ -120,46 +110,6 @@ public class PlayerMovement : MonoBehaviour
         {
             JumpStart();
         }
-    }
-
-    void Gravity()
-    {
-        yVel -= gravity * Time.deltaTime;
-    }
-
-    void CheckGround()
-    {
-        Vector3 width = new Vector3(myScale.x/2f, 0, 0);
-        float boxBottom = transform.position.y - myScale.y/2f;
-
-        RaycastHit2D groundLeft = Physics2D.Raycast(myPos - width, -Vector2.up, 100f, ground);
-        RaycastHit2D groundRight = Physics2D.Raycast(myPos + width, -Vector2.up, 100f, ground);
-
-        float highestGround = Mathf.Max(groundLeft.point.y, groundRight.point.y);
-        float projectedY = boxBottom + yVel * Time.deltaTime;
-
-        Debug.Log("Highest Ground: " + highestGround.ToString());
-        Debug.Log("Projected Y: " + (projectedY).ToString());
-
-        grounded = (projectedY <= highestGround);
-
-        if (grounded)
-        {
-            transform.position = new Vector3(myPos.x, highestGround + myScale.y/2f, myPos.z);
-            yVel = 0;
-        }
-        else
-        {
-            Gravity();
-        }
-    }
-
-    void CheckWalls()
-    {
-        ColliderCheck right = colliderRight.GetComponent<ColliderCheck>();
-        ColliderCheck left = colliderLeft.GetComponent<ColliderCheck>();
-
-
     }
 
     void Timers()
