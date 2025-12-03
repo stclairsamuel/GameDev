@@ -85,8 +85,6 @@ public class PlayerTracker : MonoBehaviour
         if (Mathf.Abs(externalVel.x) < 0.5f) { externalVel.x = 0; }
         
         //CheckWalls();
-
-        CheckPos();
         
         Timers();
     }
@@ -98,6 +96,7 @@ public class PlayerTracker : MonoBehaviour
             pMov.enabled = false;
             externalVel.x = 0;
             dash.rb.velocity = new Vector2(dash.dashForce * pMov.facingDir, 0);
+            pMov.coyoteTimer = 0;
         }
         else
         {
@@ -162,69 +161,20 @@ public class PlayerTracker : MonoBehaviour
         }
     }
 
-    public void CheckPos()
-    {
-        float newX = myPos.x;
-        float newY = myPos.y;
-        
-        float boxLeft = predictedX - halfWidth;
-        float boxRight = predictedX + halfWidth;
-
-        float[] leftSides = new float[3];
-        float[] rightSides = new float[3];
-
-        for (int i = 0; i < leftChecks.Count; i++)
-        {
-            Vector2 offSet = new Vector2(0, (-halfHeight + (i * halfHeight)) * 0.9f);
-            leftChecks[i] = Physics2D.Raycast(myPos + offSet, Vector2.left, 100f, ground);
-            leftSides[i] = leftChecks[i].collider ? myPos.x - leftChecks[i].distance : -Mathf.Infinity;
-        }
-        
-        for (int i = 0; i < rightChecks.Count; i++)
-        {
-            Vector2 offSet = new Vector2(0, (-halfHeight + (i * halfHeight)) * 0.9f);
-            rightChecks[i] = Physics2D.Raycast(myPos + offSet, Vector2.right, 100f, ground);
-            rightSides[i] = rightChecks[i].collider ? myPos.x + rightChecks[i].distance : Mathf.Infinity;
-        }
-
-        float closestLeft = Mathf.Max(leftSides);
-        float closestRight = Mathf.Min(rightSides);
-
-        float boxBottom = predictedY - halfHeight;
-        float boxTop = predictedY + halfHeight;
-
-        float[] groundHeights = new float[3];
-        float[] topHeights = new float[3];
-
-        for (int i = 0; i < groundChecks.Count; i++)
-        {
-            Vector2 offSet = new Vector2(-halfWidth + (i * halfWidth), 0);
-            groundChecks[i] = Physics2D.Raycast(myPos + offSet, Vector2.down, 100f, ground);
-            groundHeights[i] = groundChecks[i].collider ? myPos.y - groundChecks[i].distance : -Mathf.Infinity;
-        }
-
-        for (int i = 0; i < topChecks.Count; i++)
-        {
-            Vector2 offSet = new Vector2(-halfWidth + (i * halfWidth), 0);
-            topChecks[i] = Physics2D.Raycast(myPos + offSet, Vector2.up, 100f, ground);
-            topHeights[i] = topChecks[i].collider ? myPos.y + topChecks[i].distance : Mathf.Infinity;
-        }
-        
-        float highestGround = Mathf.Max(groundHeights);
-
-        float lowestTop = Mathf.Min(topHeights);
-
-        SetPos(new Vector2(Mathf.Clamp(predictedX, closestLeft + halfWidth + 0.02f, closestRight - halfWidth - 0.02f), 
-            Mathf.Clamp(predictedY, highestGround + halfHeight, lowestTop - halfHeight)));
-    }
-
     public void CheckGround()
     {
+        bool groundedLastFrame = grounded;
+
         grounded = Physics2D.BoxCast(myPos - new Vector2(0, halfHeight), new Vector2(myScale.x, 0.05f), 0, Vector2.down, 0.1f, ground);
 
         if (grounded && pMov.yVel < 0)
             pMov.yVel = -2f;
         else
+            if (groundedLastFrame && (pMov.jumpTimer == 0))
+            {
+                pMov.coyoteTimer = pMov.coyoteTime;
+            }
+                
             Gravity();
     }
 
@@ -234,11 +184,41 @@ public class PlayerTracker : MonoBehaviour
 
         if (groundTest && pMov.yVel > 0)
         {
-            pMov.yVel = -0.02f;
-            if (pMov.isJumping)
+            float[] topHeights = new float[3];
+
+            for (int i = 0; i < topChecks.Count; i++)
             {
-                pMov.JumpStop();
+                Vector2 offSet = new Vector2((-halfWidth + i * halfWidth), 0);
+                topChecks[i] = Physics2D.Raycast(myPos + offSet, Vector2.up, 100f, ground);
+                topHeights[i] = topChecks[i].collider ? myPos.y + topChecks[i].distance : Mathf.Infinity;
             }
+
+            bool left = topHeights[0] - myPos.y < halfHeight + 0.2f;
+            bool mid = topHeights[1] - myPos.y < halfHeight + 0.2f;
+            bool right = topHeights[2] - myPos.y < halfHeight + 0.2f;
+
+            if (left && !mid && !right)
+            {
+                RaycastHit2D ray = Physics2D.Raycast(myPos + new Vector2(0, halfHeight + 0.2f), Vector2.left, halfWidth, ground);
+                float correctedX = myPos.x + (halfWidth - ray.distance + 0.02f);
+                SetPos(new Vector2(correctedX, myPos.y));
+            }
+            else if (right && !mid && !left)
+            {
+                RaycastHit2D ray = Physics2D.Raycast(myPos + new Vector2(0, halfHeight + 0.2f), Vector2.right, halfWidth, ground);
+                float correctedX = myPos.x - (halfWidth - ray.distance + 0.02f);
+                SetPos(new Vector2(correctedX, myPos.y));
+            }
+
+            else
+            {
+                pMov.yVel = -0.02f;
+                if (pMov.isJumping)
+                {
+                    pMov.JumpStop();
+                }
+            }
+
         }
     }
 

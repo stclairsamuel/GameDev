@@ -10,6 +10,7 @@ public class PlayerMovement : MonoBehaviour
     public float yVel;
     
     public float baseMoveSpeed;
+    public float apexSpeed;
     public float activeMoveSpeed;
 
     public Vector3 myPos;
@@ -21,6 +22,10 @@ public class PlayerMovement : MonoBehaviour
     public float jumpForce;
     public float jumpTime;
     public float jumpTimer;
+
+    public float releaseJumpMultiplier;
+
+    public int jumpDir;
 
     public float xInput;
     public float externalXVel;
@@ -36,28 +41,26 @@ public class PlayerMovement : MonoBehaviour
     public GameObject colliderLeft;
     public GameObject colliderRight;
 
+    public float coyoteTime;
+    public float coyoteTimer;
+    public float apexBoostTime;
+    public float apexBoostTimer;
+
     // Start is called before the first frame update
     void Start()
     {
-        
+        activeMoveSpeed = baseMoveSpeed;
     }
 
     // Update is called once per frame
     void Update()
     {
+
         myPos = transform.position;
 
-        activeMoveSpeed = baseMoveSpeed;
+        SpeedCheck();
 
-        if (xInput != 0) { facingDir = xInput; }
-        
-        //jump start
-
-        if (pTracker.grounded) { canJump = true; }
-        else { canJump = false; }
-
-        if (jumpTimer == 0) { isJumping = false; }
-        if (jumpTimer > 0) { isJumping = true; }
+        JumpChecks();
 
         if (takeInput)
         {
@@ -68,12 +71,16 @@ public class PlayerMovement : MonoBehaviour
             xInput = 0;
         }
 
-        if (Input.GetKeyUp(jumpKey) && isJumping)
+        if (Input.GetKeyUp(jumpKey))
         {
-            JumpStop();
-        }
+            if (isJumping)
+                JumpStop();
 
-        //jump end
+            if (jumpDir == 1)
+            {
+                yVel *= releaseJumpMultiplier;
+            }
+        }
 
         if (xInput != 0)
         {
@@ -88,14 +95,56 @@ public class PlayerMovement : MonoBehaviour
         Timers();
     }
 
+    void SpeedCheck()
+    {
+        /*
+        if (apexBoostTimer > 0)
+        {
+            activeMoveSpeed = apexSpeed;
+        }
+        else 
+        {
+            activeMoveSpeed = baseMoveSpeed;
+        }
+        */
+
+        activeMoveSpeed = baseMoveSpeed;
+    }
+
+    void JumpChecks()
+    {
+        int lastJumpDir = jumpDir;
+
+        if (xInput != 0) { facingDir = xInput; }
+
+        if (pTracker.grounded || coyoteTimer > 0) { canJump = true; }
+        else { canJump = false; }
+
+        if (pTracker.grounded)
+            jumpDir = 0;
+
+        if (jumpTimer > 0)
+            jumpDir = 1;
+            
+        if (yVel < 0 && jumpDir == 1)
+        {
+            apexBoostTimer = apexBoostTime;
+            jumpDir = -1;
+        }
+
+        if (jumpTimer == 0) { isJumping = false; }
+        if (jumpTimer > 0) { isJumping = true; }
+    }
+
     void JumpStart()
     {
         jumpTimer = jumpTime;
         yVel = jumpForce;
     }
+
     public void JumpStop()
     {
-        if (yVel > 0)
+        if (jumpDir == 1)
         {
             yVel *= 0.3f;
         }
@@ -118,12 +167,18 @@ public class PlayerMovement : MonoBehaviour
     void Timers()
     {
         if (jumpTimer > 0)
-        {
             jumpTimer -= Time.deltaTime;
-        }
         else
-        {
             jumpTimer = 0;
-        }
+            
+        if (coyoteTimer > 0)
+            coyoteTimer -= Time.deltaTime;
+        else
+            coyoteTimer = 0;
+            
+        if (apexBoostTimer > 0)
+            apexBoostTimer -= Time.deltaTime;
+        else
+            apexBoostTimer = 0;
     }
 }

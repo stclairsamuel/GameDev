@@ -4062,6 +4062,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4480448280421652461, guid: 02d5266782dc8c149a65782b5cd4626f, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4480448280421652461, guid: 02d5266782dc8c149a65782b5cd4626f, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 02d5266782dc8c149a65782b5cd4626f, type: 3}
 --- !u!1001 &345635549
@@ -4533,7 +4541,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287129, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: m_BodyType
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287129, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: m_Material
@@ -4541,7 +4549,7 @@ PrefabInstance:
       objectReference: {fileID: 6200000, guid: a5b871bb7121c7e4a9e0f12718677112, type: 2}
     - target: {fileID: 3538810331697287129, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: m_CollisionDetection
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287130, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: m_Size.x
@@ -4600,12 +4608,40 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: apexSpeed
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: myScale.x
       value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: myScale.y
       value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: coyoteTime
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: apexBoostTime
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: baseMoveSpeed
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: releaseJumpForce
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: releaseJumpMultiplier
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287134, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: dashForce
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287135, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: gravity
