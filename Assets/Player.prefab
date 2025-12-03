@@ -213,3 +213,5 @@ MonoBehaviour:
   ground:
     serializedVersion: 2
     m_Bits: 0
+  touchingLeft: 0
+  touchingRight: 0

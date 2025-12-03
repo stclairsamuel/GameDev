@@ -81,6 +81,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         xVel = pTracker.ReturnXVel(activeMoveSpeed * xInput);
+        yVel = pTracker.ReturnYVel(yVel);
 
         rb.velocity = new Vector2(xVel, yVel);
 
@@ -92,12 +93,14 @@ public class PlayerMovement : MonoBehaviour
         jumpTimer = jumpTime;
         yVel = jumpForce;
     }
-    void JumpStop()
+    public void JumpStop()
     {
         if (yVel > 0)
         {
             yVel *= 0.3f;
         }
+
+        jumpTimer = 0;
 
         isJumping = false;
     }

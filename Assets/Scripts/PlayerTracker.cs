@@ -26,16 +26,72 @@ public class PlayerTracker : MonoBehaviour
 
     public LayerMask ground;
 
+    public bool touchingLeft;
+    public bool touchingRight;
+
+    float predictedX;
+    float predictedY;
+
+    float halfHeight;
+    float halfWidth;
+
+    private List<RaycastHit2D> groundChecks = new List<RaycastHit2D>() { 
+        new RaycastHit2D(),
+        new RaycastHit2D(),
+        new RaycastHit2D()
+    };
+    private List<RaycastHit2D> topChecks = new List<RaycastHit2D>() { 
+        new RaycastHit2D(),
+        new RaycastHit2D(),
+        new RaycastHit2D()
+    };
+    private List<RaycastHit2D> leftChecks = new List<RaycastHit2D>() { 
+        new RaycastHit2D(),
+        new RaycastHit2D(),
+        new RaycastHit2D()
+    };
+    private List<RaycastHit2D> rightChecks = new List<RaycastHit2D>() { 
+        new RaycastHit2D(),
+        new RaycastHit2D(),
+        new RaycastHit2D()
+    };
+
+
     // Start is called before the first frame update
     void Start()
     {
         currentHealth = startingHealth;
         
         transform.localScale = new Vector3 (myScale.x, myScale.y, transform.localScale.z);
+        
+        halfWidth = myScale.x/2f;
+        halfHeight = myScale.y/2f;
     }
 
     // Update is called once per frame
     void Update()
+    {
+        myPos = transform.position;
+
+        predictedX = myPos.x + ReturnXVel(pMov.xVel) * Time.deltaTime;
+        predictedY = myPos.y + ReturnYVel(pMov.yVel) * Time.deltaTime;
+
+        TestPMov();
+
+        CheckGround();
+        CheckTop();
+
+        externalVel.x *= Mathf.Exp(-0.9f * Time.deltaTime);
+        if (Mathf.Abs(externalVel.x) < 0.5f) { externalVel.x = 0; }
+        
+        //CheckWalls();
+
+        CheckPos();
+        
+        Timers();
+    }
+
+    void TestPMov()
     {
         if (dash.isDashing)
         {
@@ -47,6 +103,7 @@ public class PlayerTracker : MonoBehaviour
         {
             pMov.enabled = true;
         }
+
         if (stunTimer > 0)
         {
             pMov.takeInput = false;
@@ -55,26 +112,7 @@ public class PlayerTracker : MonoBehaviour
         {
             pMov.takeInput = true; 
         }
-
-        myPos = transform.position;
-
-        CheckGround();
-
-        externalVel.x *= Mathf.Exp(-0.9f * Time.deltaTime);
-        if (Mathf.Abs(externalVel.x) < 0.5f) { externalVel.x = 0; }
-
-        CheckWalls();
-        
-        if (Mathf.Abs(externalVel.x) > 7f)
-        {
-            WallCheck();
-        }
-
-
-        Timers();
     }
-
-
 
     public float ReturnXVel(float xVel)
     {
@@ -102,76 +140,105 @@ public class PlayerTracker : MonoBehaviour
         return xVel;
     }
 
-    public void WallCheck()
+    public float ReturnYVel(float yVel)
     {
-        RaycastHit2D back = Physics2D.Raycast(myPos, new Vector2(Mathf.Sign(externalVel.x), 0), transform.localScale.x * 0.5f + 0.1f, ground);
-        Debug.DrawRay(transform.position, new Vector2(-Mathf.Sign(externalVel.x), 0) * (transform.localScale.x * 0.5f + 0.1f), Color.green);
-
-        if (back)
-        {
-            externalVel.x *= -0.2f;
-            
-            if (stunTimer < 0.2f) stunTimer = 0.2f;
-        }
+        return yVel;
     }
 
     public void CheckWalls()
     {
-        float projectedX = myPos.x + ReturnXVel(pMov.xVel) * Time.deltaTime;
+        RaycastHit2D leftCast = Physics2D.BoxCast(myPos, myScale, 0, Vector2.left, 0.1f, ground);
+        RaycastHit2D rightCast = Physics2D.BoxCast(myPos, myScale, 0, Vector2.right, 0.1f, ground);
 
-        Vector2 queryPos = new Vector2(Mathf.Lerp(myPos.x, projectedX, 0.5f), myPos.y);
-        Vector2 queryScale = new Vector2(myScale.x + Mathf.Abs(myPos.x - projectedX), myScale.y - 0.1f);
+        touchingLeft = leftCast;
+        touchingRight = rightCast;
 
-        ContactFilter2D whatIsGround = new ContactFilter2D { layerMask = ground, useLayerMask = true };
-
-        Collider2D[] colliders = Physics2D.OverlapBoxAll(queryPos, queryScale, 0, ground);
-        bool hit = (colliders.Length > 0);
-
-        if (hit)
+        if (Mathf.Abs(externalVel.x) > 7f)
         {
-            Debug.Log("Hit!");
-
-            RaycastHit2D front = Physics2D.Raycast(myPos + new Vector2(0, -myScale.y/2.2f), new Vector2(Mathf.Sign(ReturnXVel(pMov.xVel)), 0), Vector2.Distance(myPos, queryPos + new Vector2(myScale.x/2f, 0)), ground);
-            if (front) 
-            { 
-                float newXPos = front.point.x - Mathf.Sign(ReturnXVel(pMov.xVel)) * myScale.x/2f;
-
-                transform.position = new Vector2(newXPos, myPos.y);
+            if ((externalVel.x < 0 && touchingLeft) || (externalVel.x > 0 && touchingLeft))
+            {
+                externalVel.x *= -0.2f;
             }
         }
     }
 
-    void OnDrawGizmosSelected()
+    public void CheckPos()
     {
-        float projectedX = myPos.x + ReturnXVel(pMov.xVel) * Time.deltaTime;
+        float newX = myPos.x;
+        float newY = myPos.y;
+        
+        float boxLeft = predictedX - halfWidth;
+        float boxRight = predictedX + halfWidth;
 
-        Vector2 queryPos = new Vector2(Mathf.Lerp(myPos.x, projectedX, 0.5f), myPos.y);
-        Vector2 queryScale = new Vector2(myScale.x + Mathf.Abs(myPos.x - projectedX), myScale.y - 0.1f);
+        float[] leftSides = new float[3];
+        float[] rightSides = new float[3];
 
-        Gizmos.DrawWireCube(queryPos, queryScale);
+        for (int i = 0; i < leftChecks.Count; i++)
+        {
+            Vector2 offSet = new Vector2(0, (-halfHeight + (i * halfHeight)) * 0.9f);
+            leftChecks[i] = Physics2D.Raycast(myPos + offSet, Vector2.left, 100f, ground);
+            leftSides[i] = leftChecks[i].collider ? myPos.x - leftChecks[i].distance : -Mathf.Infinity;
+        }
+        
+        for (int i = 0; i < rightChecks.Count; i++)
+        {
+            Vector2 offSet = new Vector2(0, (-halfHeight + (i * halfHeight)) * 0.9f);
+            rightChecks[i] = Physics2D.Raycast(myPos + offSet, Vector2.right, 100f, ground);
+            rightSides[i] = rightChecks[i].collider ? myPos.x + rightChecks[i].distance : Mathf.Infinity;
+        }
+
+        float closestLeft = Mathf.Max(leftSides);
+        float closestRight = Mathf.Min(rightSides);
+
+        float boxBottom = predictedY - halfHeight;
+        float boxTop = predictedY + halfHeight;
+
+        float[] groundHeights = new float[3];
+        float[] topHeights = new float[3];
+
+        for (int i = 0; i < groundChecks.Count; i++)
+        {
+            Vector2 offSet = new Vector2(-halfWidth + (i * halfWidth), 0);
+            groundChecks[i] = Physics2D.Raycast(myPos + offSet, Vector2.down, 100f, ground);
+            groundHeights[i] = groundChecks[i].collider ? myPos.y - groundChecks[i].distance : -Mathf.Infinity;
+        }
+
+        for (int i = 0; i < topChecks.Count; i++)
+        {
+            Vector2 offSet = new Vector2(-halfWidth + (i * halfWidth), 0);
+            topChecks[i] = Physics2D.Raycast(myPos + offSet, Vector2.up, 100f, ground);
+            topHeights[i] = topChecks[i].collider ? myPos.y + topChecks[i].distance : Mathf.Infinity;
+        }
+        
+        float highestGround = Mathf.Max(groundHeights);
+
+        float lowestTop = Mathf.Min(topHeights);
+
+        SetPos(new Vector2(Mathf.Clamp(predictedX, closestLeft + halfWidth + 0.02f, closestRight - halfWidth - 0.02f), 
+            Mathf.Clamp(predictedY, highestGround + halfHeight, lowestTop - halfHeight)));
     }
 
     public void CheckGround()
     {
-        Vector2 width = new Vector2(myScale.x/2f, 0);
-        float boxBottom = transform.position.y - myScale.y/2f;
+        grounded = Physics2D.BoxCast(myPos - new Vector2(0, halfHeight), new Vector2(myScale.x, 0.05f), 0, Vector2.down, 0.1f, ground);
 
-        RaycastHit2D groundLeft = Physics2D.Raycast(myPos - width + new Vector2(0.02f, 0), -Vector2.up, 100f, ground);
-        RaycastHit2D groundRight = Physics2D.Raycast(myPos + width - new Vector2(0.02f, 0), -Vector2.up, 100f, ground);
-
-        float highestGround = Mathf.Max(groundLeft.point.y, groundRight.point.y);
-        float projectedY = boxBottom + pMov.yVel * Time.deltaTime;
-
-        grounded = (projectedY <= highestGround);
-
-        if (grounded)
-        {
-            transform.position = new Vector2(myPos.x, highestGround + myScale.y/2f);
-            pMov.yVel = 0;
-        }
-        else if (!dash.isDashing)
-        {
+        if (grounded && pMov.yVel < 0)
+            pMov.yVel = -2f;
+        else
             Gravity();
+    }
+
+    public void CheckTop()
+    {
+        RaycastHit2D groundTest = Physics2D.BoxCast(myPos + new Vector2(0, halfHeight), new Vector2(myScale.x, 0.05f), 0, Vector2.up, 0.1f, ground);
+
+        if (groundTest && pMov.yVel > 0)
+        {
+            pMov.yVel = -0.02f;
+            if (pMov.isJumping)
+            {
+                pMov.JumpStop();
+            }
         }
     }
 
@@ -199,6 +266,14 @@ public class PlayerTracker : MonoBehaviour
         stunTimer = stunTime;
         
         currentHealth -= damageAmt;
+    }
+
+    public void SetPos(Vector2 newPos)
+    {
+        transform.position = newPos;
+        myPos = newPos;
+        predictedX = newPos.x + ReturnXVel(pMov.xVel) * Time.deltaTime;
+        predictedY = newPos.y + ReturnYVel(pMov.yVel) * Time.deltaTime;
     }
 
     void Timers()
