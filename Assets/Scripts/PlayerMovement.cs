@@ -12,6 +12,7 @@ public class PlayerMovement : MonoBehaviour
     public float baseMoveSpeed;
     public float apexSpeed;
     public float activeMoveSpeed;
+    public bool lockSpeed;
 
     public Vector3 myPos;
 
@@ -20,10 +21,13 @@ public class PlayerMovement : MonoBehaviour
     public bool canJump;
     public bool isJumping;
     public float jumpForce;
+    public float dashWallJumpForce;
     public float jumpTime;
     public float jumpTimer;
 
     public float wallJumpXForce;
+    public float normalWallJumpXForce;
+    public float dashWallJumpXForce;
 
     public float releaseJumpMultiplier;
 
@@ -43,10 +47,17 @@ public class PlayerMovement : MonoBehaviour
     public GameObject colliderLeft;
     public GameObject colliderRight;
 
+    public float lockSpeedTime;
+    public float lockSpeedTimer;
+
     public float coyoteTime;
     public float coyoteTimer;
+    public int coyoteTimeWall;
+    public float lastWallJump;
     public float apexBoostTime;
     public float apexBoostTimer;
+    public float wallJumpBoostTime;
+    public float wallJumpBoostTimer;
 
     // Start is called before the first frame update
     void Start()
@@ -75,8 +86,12 @@ public class PlayerMovement : MonoBehaviour
 
         if (Input.GetKeyUp(jumpKey))
         {
+            pTracker.jumpBufferTimer = 0;
+
             if (isJumping)
+            {
                 JumpStop();
+            }
 
             if (jumpDir == 1)
             {
@@ -89,7 +104,6 @@ public class PlayerMovement : MonoBehaviour
             facingDir = Mathf.Sign(xVel);
         }
 
-        
         yVel = pTracker.ReturnYVel(yVel);
 
         rb.velocity = new Vector2(xVel, yVel);
@@ -99,16 +113,44 @@ public class PlayerMovement : MonoBehaviour
 
     void SpeedCheck()
     {
+        wallJumpXForce = pTracker.dashWallJumptimer > 0 ? dashWallJumpXForce : normalWallJumpXForce;
+
+        if (pTracker.storedVelTimer > 0 && Mathf.Abs(pTracker.storedXVel) > wallJumpXForce)
+        {
+            wallJumpXForce = Mathf.Abs(pTracker.storedXVel);
+        }
+
+        if (Mathf.Abs(xVel) < baseMoveSpeed) { lockSpeed = true; }
+
+        if (lockSpeed) 
+        { 
+            xVel = Mathf.Clamp(xVel, -activeMoveSpeed, activeMoveSpeed); 
+            pTracker.storedXVel = 0;
+        }
+        
         activeMoveSpeed = baseMoveSpeed;
 
         if (pTracker.grounded)
         {
-            xVel = Mathf.Clamp(xVel, -activeMoveSpeed, activeMoveSpeed);
+            if (lockSpeedTimer <= 0) 
+            { 
+                lockSpeed = true; 
+            }
 
-            xVel = activeMoveSpeed * xInput;
+            if (Mathf.Abs(xVel) <= activeMoveSpeed)
+                xVel = activeMoveSpeed * xInput;
         }
         else
         {
+            if (wallJumpBoostTimer > 0 && xInput == -lastWallJump)
+            {
+                xVel = wallJumpXForce * -lastWallJump;
+                wallJumpBoostTimer = 0;
+
+                return;
+            }
+
+
             if (xInput == 0)
             {
                 xVel *= Mathf.Exp(-10f * Time.deltaTime);
@@ -117,10 +159,12 @@ public class PlayerMovement : MonoBehaviour
             {
 
                 if (xInput == Mathf.Sign(xVel))
-                    xVel += activeMoveSpeed * 8f * Time.deltaTime * xInput;
+                {
+                    if (Mathf.Abs(xVel) <= activeMoveSpeed)
+                        xVel = Mathf.Clamp(xVel + (activeMoveSpeed * 8f * xInput * Time.deltaTime), -activeMoveSpeed, activeMoveSpeed);
+                }
                 else
                     xVel += activeMoveSpeed * 16f * Time.deltaTime * xInput;
-                xVel = Mathf.Clamp(xVel, -activeMoveSpeed, activeMoveSpeed);
             }
         }
     }
@@ -154,9 +198,20 @@ public class PlayerMovement : MonoBehaviour
     {
         jumpTimer = jumpTime;
 
-        if (pTracker.grabbingWall)
+        if (pTracker.grabbingWall || coyoteTimeWall != 0)
         {
-            xVel = -wallJumpXForce * xInput;
+            lockSpeed = false;
+            if (coyoteTimeWall != 0)
+            {
+                xVel = -coyoteTimeWall * wallJumpXForce;
+                lastWallJump = coyoteTimeWall;
+            }
+            else
+            {
+                wallJumpBoostTimer = wallJumpBoostTime;
+                xVel = -wallJumpXForce * xInput;
+                lastWallJump = xInput;
+            }
         }
 
         yVel = jumpForce;
@@ -178,7 +233,18 @@ public class PlayerMovement : MonoBehaviour
     {
         xInput = Input.GetAxisRaw("Horizontal"); 
 
-        if (Input.GetKeyDown(jumpKey) && canJump)
+        if (Input.GetKeyDown(jumpKey))
+        {
+            if (canJump)
+            {
+                JumpStart();
+                pTracker.jumpBufferTimer = 0;
+            }
+            else
+                pTracker.jumpBufferTimer = pTracker.jumpBufferTime;
+        }
+
+        if (pTracker.jumpBufferTimer > 0 && canJump)
         {
             JumpStart();
         }
@@ -200,5 +266,15 @@ public class PlayerMovement : MonoBehaviour
             apexBoostTimer -= Time.deltaTime;
         else
             apexBoostTimer = 0;
+        
+        if (lockSpeedTimer > 0)
+            lockSpeedTimer -= Time.deltaTime;
+        else
+            lockSpeedTimer = 0;
+        
+        if (wallJumpBoostTimer > 0)
+            wallJumpBoostTimer -= Time.deltaTime;
+        else
+            wallJumpBoostTimer = 0;
     }
 }

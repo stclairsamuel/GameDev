@@ -38,6 +38,16 @@ public class PlayerTracker : MonoBehaviour
     float halfHeight;
     float halfWidth;
 
+    public float jumpBufferTime;
+    public float jumpBufferTimer;
+
+    public float dashWallJumpTime;
+    public float dashWallJumptimer;
+
+    public float storedXVel;
+    public float storedVelTime;
+    public float storedVelTimer;
+
     private List<RaycastHit2D> groundChecks = new List<RaycastHit2D>() { 
         new RaycastHit2D(),
         new RaycastHit2D(),
@@ -149,11 +159,23 @@ public class PlayerTracker : MonoBehaviour
 
     public void CheckWalls()
     {
-        RaycastHit2D leftCast = Physics2D.BoxCast(myPos, new Vector2(myScale.x, myScale.y * 0.6f), 0, Vector2.left, 0.1f, ground);
-        RaycastHit2D rightCast = Physics2D.BoxCast(myPos, new Vector2(myScale.x, myScale.y * 0.6f), 0, Vector2.right, 0.1f, ground);
+        RaycastHit2D leftCast = Physics2D.BoxCast(myPos, new Vector2(myScale.x, 0.2f), 0, Vector2.left, 0.1f, ground);
+        RaycastHit2D rightCast = Physics2D.BoxCast(myPos, new Vector2(myScale.x, 0.2f), 0, Vector2.right, 0.1f, ground);
+
+        bool leftLastFrame = touchingLeft;
+        bool rightLastFrame = touchingRight;
 
         touchingLeft = leftCast;
         touchingRight = rightCast;
+
+        if (touchingLeft && !leftLastFrame || touchingRight && !rightLastFrame)
+        {
+            if (Mathf.Abs(pMov.xVel) > Mathf.Abs(storedXVel))
+            {
+                storedXVel = pMov.xVel;
+            }
+            storedVelTimer = storedVelTime;
+        }
 
         if (pMov.xInput == -1 && touchingLeft || pMov.xInput == 1 && touchingRight)
         {
@@ -162,6 +184,21 @@ public class PlayerTracker : MonoBehaviour
         else
         {
             grabbingWall = false;
+        }
+
+        if (touchingLeft && !grounded && pMov.xInput != -1)
+        {
+            pMov.coyoteTimer = pMov.coyoteTime;
+            pMov.coyoteTimeWall = -1;
+        }
+        if (touchingRight && !grounded && pMov.xInput != 1)
+        {
+            pMov.coyoteTimer = pMov.coyoteTime;
+            pMov.coyoteTimeWall = 1;
+        }
+        if (pMov.coyoteTimer == 0)
+        {
+            pMov.coyoteTimeWall = 0;
         }
 
         if (Mathf.Abs(externalVel.x) > 7f)
@@ -180,7 +217,13 @@ public class PlayerTracker : MonoBehaviour
         grounded = Physics2D.BoxCast(myPos - new Vector2(0, halfHeight), new Vector2(myScale.x, 0.05f), 0, Vector2.down, 0.1f, ground);
 
         if (grounded && pMov.yVel < 0)
+        {
+            if (!groundedLastFrame && Mathf.Abs(pMov.xVel) > pMov.baseMoveSpeed)
+            {
+                    pMov.lockSpeedTimer = pMov.lockSpeedTime;
+            }
             pMov.yVel = -2f;
+        }
         else if (grabbingWall && pMov.yVel <= 0)
         {
             if (pMov.yVel < -wallSlideSpeed)
@@ -287,6 +330,33 @@ public class PlayerTracker : MonoBehaviour
         else
         {
             stunTimer = 0;
+        }
+
+        if (jumpBufferTimer > 0)
+        {
+            jumpBufferTimer -= Time.deltaTime;
+        }
+        else
+        {
+            jumpBufferTimer = 0;
+        }
+
+        if (dashWallJumptimer > 0)
+        {
+            dashWallJumptimer -= Time.deltaTime;
+        }
+        else
+        {
+            dashWallJumptimer = 0;
+        }
+
+        if (storedVelTimer > 0)
+        {
+            storedVelTimer -= Time.deltaTime;
+        }
+        else
+        {
+            storedVelTimer = 0;
         }
     }
 }

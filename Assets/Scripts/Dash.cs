@@ -16,6 +16,7 @@ public class Dash : MonoBehaviour
     public Rigidbody2D rb;
 
     public PlayerMovement pMov;
+    public PlayerTracker pTracker;
 
     public KeyCode dashKey = KeyCode.LeftShift;
 
@@ -32,6 +33,12 @@ public class Dash : MonoBehaviour
         if (Input.GetKeyDown(dashKey) && dashCooldownTimer == 0 && pMov.takeInput) 
         {
             DashStart();
+        }
+
+        if (isDashing && (pTracker.touchingLeft || pTracker.touchingRight))
+        {
+            DashEnd();
+            pTracker.dashWallJumptimer = pTracker.dashWallJumpTime;
         }
 
         if (isDashing && dashTimer == 0)
