@@ -30,6 +30,7 @@ public class PlayerTracker : MonoBehaviour
     public bool touchingRight;
     public bool grabbingWall;
     public float wallDrag;
+    public float wallSlideSpeed;
 
     float predictedX;
     float predictedY;
@@ -182,7 +183,10 @@ public class PlayerTracker : MonoBehaviour
             pMov.yVel = -2f;
         else if (grabbingWall && pMov.yVel <= 0)
         {
-            pMov.yVel *= Mathf.Exp(-wallDrag * Time.deltaTime);
+            if (pMov.yVel < -wallSlideSpeed)
+                pMov.yVel *= Mathf.Exp(-wallDrag * Time.deltaTime);
+            else
+                pMov.yVel = -wallSlideSpeed;
         }
         else
         {
