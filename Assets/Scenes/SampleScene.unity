@@ -4608,8 +4608,16 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: jumpTime
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: apexSpeed
       value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: jumpForce
+      value: 26
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: myScale.x
@@ -4629,7 +4637,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: baseMoveSpeed
-      value: 12
+      value: 16
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287133, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: releaseJumpForce
@@ -4641,11 +4649,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287134, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: dashForce
-      value: 20
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287135, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: gravity
-      value: 28
+      value: 60
       objectReference: {fileID: 0}
     - target: {fileID: 3538810331697287135, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: timeStop

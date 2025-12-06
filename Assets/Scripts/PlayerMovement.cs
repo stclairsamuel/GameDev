@@ -23,6 +23,8 @@ public class PlayerMovement : MonoBehaviour
     public float jumpTime;
     public float jumpTimer;
 
+    public float wallJumpXForce;
+
     public float releaseJumpMultiplier;
 
     public int jumpDir;
@@ -84,10 +86,10 @@ public class PlayerMovement : MonoBehaviour
 
         if (xInput != 0)
         {
-            facingDir = xInput;
+            facingDir = Mathf.Sign(xVel);
         }
 
-        xVel = pTracker.ReturnXVel(activeMoveSpeed * xInput);
+        
         yVel = pTracker.ReturnYVel(yVel);
 
         rb.velocity = new Vector2(xVel, yVel);
@@ -97,18 +99,30 @@ public class PlayerMovement : MonoBehaviour
 
     void SpeedCheck()
     {
-        /*
-        if (apexBoostTimer > 0)
-        {
-            activeMoveSpeed = apexSpeed;
-        }
-        else 
-        {
-            activeMoveSpeed = baseMoveSpeed;
-        }
-        */
-
         activeMoveSpeed = baseMoveSpeed;
+
+        if (pTracker.grounded)
+        {
+            xVel = Mathf.Clamp(xVel, -activeMoveSpeed, activeMoveSpeed);
+
+            xVel = activeMoveSpeed * xInput;
+        }
+        else
+        {
+            if (xInput == 0)
+            {
+                xVel *= Mathf.Exp(-10f * Time.deltaTime);
+            }
+            else
+            {
+
+                if (xInput == Mathf.Sign(xVel))
+                    xVel += activeMoveSpeed * 8f * Time.deltaTime * xInput;
+                else
+                    xVel += activeMoveSpeed * 16f * Time.deltaTime * xInput;
+                xVel = Mathf.Clamp(xVel, -activeMoveSpeed, activeMoveSpeed);
+            }
+        }
     }
 
     void JumpChecks()
@@ -117,7 +131,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (xInput != 0) { facingDir = xInput; }
 
-        if (pTracker.grounded || coyoteTimer > 0) { canJump = true; }
+        if (pTracker.grounded || pTracker.grabbingWall || coyoteTimer > 0) { canJump = true; }
         else { canJump = false; }
 
         if (pTracker.grounded)
@@ -139,6 +153,12 @@ public class PlayerMovement : MonoBehaviour
     void JumpStart()
     {
         jumpTimer = jumpTime;
+
+        if (pTracker.grabbingWall)
+        {
+            xVel = -wallJumpXForce * xInput;
+        }
+
         yVel = jumpForce;
     }
 

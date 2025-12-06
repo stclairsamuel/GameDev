@@ -53,7 +53,6 @@ public class Dash : MonoBehaviour
     {
         isDashing = false;
         pMov.yVel = 0;
-
     }
 
     void Timers()

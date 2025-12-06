@@ -28,6 +28,8 @@ public class PlayerTracker : MonoBehaviour
 
     public bool touchingLeft;
     public bool touchingRight;
+    public bool grabbingWall;
+    public float wallDrag;
 
     float predictedX;
     float predictedY;
@@ -84,7 +86,7 @@ public class PlayerTracker : MonoBehaviour
         externalVel.x *= Mathf.Exp(-0.9f * Time.deltaTime);
         if (Mathf.Abs(externalVel.x) < 0.5f) { externalVel.x = 0; }
         
-        //CheckWalls();
+        CheckWalls();
         
         Timers();
     }
@@ -113,13 +115,13 @@ public class PlayerTracker : MonoBehaviour
         }
     }
 
-    public float ReturnXVel(float xVel)
+    public float ReturnXVel(float xMov)
     {
         if (stunTimer > 0)
         {
             return externalVel.x;
         }
-        if (Mathf.Abs(externalVel.x) > Mathf.Abs(xVel))
+        if (Mathf.Abs(externalVel.x) > Mathf.Abs(xMov))
         {
             if (pMov.xInput == -Mathf.Sign(externalVel.x))
             {
@@ -128,7 +130,7 @@ public class PlayerTracker : MonoBehaviour
 
             return externalVel.x;
         }
-        if (Mathf.Abs(externalVel.x) < Mathf.Abs(xVel))
+        if (Mathf.Abs(externalVel.x) < Mathf.Abs(xMov))
         {
             if (pMov.xInput != 0)
             {
@@ -136,7 +138,7 @@ public class PlayerTracker : MonoBehaviour
             }
         }
         
-        return xVel;
+        return xMov;
     }
 
     public float ReturnYVel(float yVel)
@@ -146,11 +148,20 @@ public class PlayerTracker : MonoBehaviour
 
     public void CheckWalls()
     {
-        RaycastHit2D leftCast = Physics2D.BoxCast(myPos, myScale, 0, Vector2.left, 0.1f, ground);
-        RaycastHit2D rightCast = Physics2D.BoxCast(myPos, myScale, 0, Vector2.right, 0.1f, ground);
+        RaycastHit2D leftCast = Physics2D.BoxCast(myPos, new Vector2(myScale.x, myScale.y * 0.6f), 0, Vector2.left, 0.1f, ground);
+        RaycastHit2D rightCast = Physics2D.BoxCast(myPos, new Vector2(myScale.x, myScale.y * 0.6f), 0, Vector2.right, 0.1f, ground);
 
         touchingLeft = leftCast;
         touchingRight = rightCast;
+
+        if (pMov.xInput == -1 && touchingLeft || pMov.xInput == 1 && touchingRight)
+        {
+            grabbingWall = true;
+        }
+        else
+        {
+            grabbingWall = false;
+        }
 
         if (Mathf.Abs(externalVel.x) > 7f)
         {
@@ -169,13 +180,19 @@ public class PlayerTracker : MonoBehaviour
 
         if (grounded && pMov.yVel < 0)
             pMov.yVel = -2f;
+        else if (grabbingWall && pMov.yVel <= 0)
+        {
+            pMov.yVel *= Mathf.Exp(-wallDrag * Time.deltaTime);
+        }
         else
+        {
             if (groundedLastFrame && (pMov.jumpTimer == 0))
             {
                 pMov.coyoteTimer = pMov.coyoteTime;
             }
                 
             Gravity();
+        }
     }
 
     public void CheckTop()
@@ -225,6 +242,7 @@ public class PlayerTracker : MonoBehaviour
     void Gravity()
     {
         pMov.yVel -= gravity * Time.deltaTime;
+        pMov.yVel = Mathf.Clamp(pMov.yVel, -20f, Mathf.Infinity);
     }
 
     public void Damage(GameObject hitBy, float damageAmt, float knockback, float freezeTime = 0.2f, float stunTime = 0.3f)
