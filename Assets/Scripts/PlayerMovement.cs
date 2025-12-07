@@ -13,6 +13,7 @@ public class PlayerMovement : MonoBehaviour
     public float apexSpeed;
     public float activeMoveSpeed;
     public bool lockSpeed;
+    public float airMovMult;
 
     public Vector3 myPos;
 
@@ -106,7 +107,7 @@ public class PlayerMovement : MonoBehaviour
 
         yVel = pTracker.ReturnYVel(yVel);
 
-        rb.velocity = new Vector2(xVel, yVel);
+        rb.velocity = new Vector2(pTracker.ReturnXVel(xVel), yVel);
 
         Timers();
     }
@@ -124,8 +125,9 @@ public class PlayerMovement : MonoBehaviour
 
         if (lockSpeed) 
         { 
-            xVel = Mathf.Clamp(xVel, -activeMoveSpeed, activeMoveSpeed); 
-            pTracker.storedXVel = 0;
+            //xVel = Mathf.Clamp(xVel, -activeMoveSpeed, activeMoveSpeed); 
+            if (pTracker.grounded)
+                pTracker.storedXVel = 0;
         }
         
         activeMoveSpeed = baseMoveSpeed;
@@ -157,14 +159,17 @@ public class PlayerMovement : MonoBehaviour
             }
             else
             {
+                float velToAdd = activeMoveSpeed * airMovMult * xInput * Time.deltaTime;
 
                 if (xInput == Mathf.Sign(xVel))
                 {
-                    if (Mathf.Abs(xVel) <= activeMoveSpeed)
-                        xVel = Mathf.Clamp(xVel + (activeMoveSpeed * 8f * xInput * Time.deltaTime), -activeMoveSpeed, activeMoveSpeed);
+                    AddXVel(velToAdd, false);
                 }
                 else
-                    xVel += activeMoveSpeed * 16f * Time.deltaTime * xInput;
+                {
+                    //AddXVel(, false);
+                    xVel += activeMoveSpeed * airMovMult * 2f * Time.deltaTime * xInput;
+                }
             }
         }
     }
@@ -250,6 +255,25 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    public void AddXVel(float addedVel, bool passesSpeedCheck)
+    {
+        if (Mathf.Abs(xVel + addedVel) > activeMoveSpeed)
+            addedVel = 0;
+        SetXVel(xVel + addedVel, true);
+    }
+
+    public void SetXVel(float newVel, bool passesSpeedCheck)
+    {
+        if (passesSpeedCheck)
+        {
+            xVel = newVel;
+        }
+        else
+        {
+            xVel = Mathf.Clamp(newVel, -activeMoveSpeed, activeMoveSpeed);
+        }
+    }
+
     void Timers()
     {
         if (jumpTimer > 0)
@@ -277,4 +301,5 @@ public class PlayerMovement : MonoBehaviour
         else
             wallJumpBoostTimer = 0;
     }
+
 }

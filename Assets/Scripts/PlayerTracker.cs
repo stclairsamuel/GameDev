@@ -162,6 +162,20 @@ public class PlayerTracker : MonoBehaviour
         RaycastHit2D leftCast = Physics2D.BoxCast(myPos, new Vector2(myScale.x, 0.2f), 0, Vector2.left, 0.1f, ground);
         RaycastHit2D rightCast = Physics2D.BoxCast(myPos, new Vector2(myScale.x, 0.2f), 0, Vector2.right, 0.1f, ground);
 
+        float offSet = Mathf.Sign(ReturnXVel(pMov.xVel)) * halfWidth + 0.2f * Mathf.Sign(ReturnXVel(pMov.xVel));
+
+        RaycastHit2D topForwards = Physics2D.Raycast(new Vector2(myPos.x, myPos.y + halfHeight/2f), new Vector2(Mathf.Sign(ReturnXVel(pMov.xVel)), 0), halfWidth + 0.2f, ground);
+        RaycastHit2D bottomForwards = Physics2D.Raycast(new Vector2(myPos.x, myPos.y - halfHeight/2f), new Vector2(Mathf.Sign(ReturnXVel(pMov.xVel)), 0), halfWidth + 0.2f, ground);
+
+        RaycastHit2D topClipping = Physics2D.Raycast(new Vector2(myPos.x + offSet, myPos.y + halfHeight/2f), Vector2.up, halfHeight/2f, ground);
+        RaycastHit2D bottomClipping = Physics2D.Raycast(new Vector2(myPos.x + offSet, myPos.y - halfHeight/2f), Vector2.down, halfHeight/2f, ground);
+
+        if (!topForwards && topClipping)
+        {
+            if (Mathf.Abs(ReturnXVel(pMov.xVel)) > pMov.baseMoveSpeed || dash.isDashing)
+                SetPos(new Vector2(myPos.x, myPos.y - halfHeight/2f + topClipping.distance - 0.02f));
+        }
+
         bool leftLastFrame = touchingLeft;
         bool rightLastFrame = touchingRight;
 
@@ -185,6 +199,8 @@ public class PlayerTracker : MonoBehaviour
         {
             grabbingWall = false;
         }
+
+        if (Mathf.Sign(ReturnXVel(pMov.xVel)) == -1 && touchingLeft || Mathf.Sign(ReturnXVel(pMov.xVel)) == 1 && touchingRight) { pMov.xVel = 0; }
 
         if (touchingLeft && !grounded && pMov.xInput != -1)
         {
@@ -358,5 +374,32 @@ public class PlayerTracker : MonoBehaviour
         {
             storedVelTimer = 0;
         }
+    }
+
+    public void AddXVel(float addedVel, bool passesSpeedCheck)
+    {
+        SetXVel(pMov.xVel + addedVel, passesSpeedCheck);
+    }
+
+    public void SetXVel(float newVel, bool passesSpeedCheck)
+    {
+        if (passesSpeedCheck)
+        {
+            pMov.xVel = newVel;
+        }
+        else
+        {
+            pMov.xVel = Mathf.Clamp(newVel, -pMov.activeMoveSpeed, pMov.activeMoveSpeed);
+        }
+    }
+    
+    public void OnGroundContact()
+    {
+        
+    }
+
+    public void OnWallContact()
+    {
+
     }
 }

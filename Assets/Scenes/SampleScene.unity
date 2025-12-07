@@ -4524,6 +4524,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1918050728}
   m_CullTransparentMesh: 1
+--- !u!114 &2008929078 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3538810331697287135, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+  m_PrefabInstance: {fileID: 3538810330921038296}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 143935605f875334493db6c03384c379, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &3538810330921038296
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4647,6 +4658,10 @@ PrefabInstance:
       propertyPath: releaseJumpMultiplier
       value: 0.5
       objectReference: {fileID: 0}
+    - target: {fileID: 3538810331697287134, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
+      propertyPath: pTracker
+      value: 
+      objectReference: {fileID: 2008929078}
     - target: {fileID: 3538810331697287134, guid: 0f21cc48179ba2a40b2efb45f644b934, type: 3}
       propertyPath: dashForce
       value: 40
