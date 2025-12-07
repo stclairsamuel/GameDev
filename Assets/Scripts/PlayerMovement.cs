@@ -138,15 +138,15 @@ public class PlayerMovement : MonoBehaviour
             { 
                 lockSpeed = true; 
             }
-
-            if (Mathf.Abs(xVel) <= activeMoveSpeed)
-                xVel = activeMoveSpeed * xInput;
+            
+            if (lockSpeed)
+                SetXVel(activeMoveSpeed * xInput);
         }
         else
         {
             if (wallJumpBoostTimer > 0 && xInput == -lastWallJump)
             {
-                xVel = wallJumpXForce * -lastWallJump;
+                SetXVel(wallJumpXForce * -lastWallJump, true);
                 wallJumpBoostTimer = 0;
 
                 return;
@@ -155,7 +155,7 @@ public class PlayerMovement : MonoBehaviour
 
             if (xInput == 0)
             {
-                xVel *= Mathf.Exp(-10f * Time.deltaTime);
+                SetXVel(xVel * Mathf.Exp(-10f * Time.deltaTime), true);
             }
             else
             {
@@ -163,21 +163,18 @@ public class PlayerMovement : MonoBehaviour
 
                 if (xInput == Mathf.Sign(xVel))
                 {
-                    AddXVel(velToAdd, false);
+                    AddXVel(velToAdd);
                 }
                 else
                 {
-                    //AddXVel(, false);
-                    xVel += activeMoveSpeed * airMovMult * 2f * Time.deltaTime * xInput;
-                }
+                    AddXVel(activeMoveSpeed * airMovMult * 2f * Time.deltaTime * xInput);
+                }   
             }
         }
     }
 
     void JumpChecks()
     {
-        int lastJumpDir = jumpDir;
-
         if (xInput != 0) { facingDir = xInput; }
 
         if (pTracker.grounded || pTracker.grabbingWall || coyoteTimer > 0) { canJump = true; }
@@ -191,7 +188,6 @@ public class PlayerMovement : MonoBehaviour
             
         if (yVel < 0 && jumpDir == 1)
         {
-            apexBoostTimer = apexBoostTime;
             jumpDir = -1;
         }
 
@@ -208,13 +204,13 @@ public class PlayerMovement : MonoBehaviour
             lockSpeed = false;
             if (coyoteTimeWall != 0)
             {
-                xVel = -coyoteTimeWall * wallJumpXForce;
+                SetXVel(-coyoteTimeWall * wallJumpXForce, true);
                 lastWallJump = coyoteTimeWall;
             }
             else
             {
                 wallJumpBoostTimer = wallJumpBoostTime;
-                xVel = -wallJumpXForce * xInput;
+                SetXVel(-wallJumpXForce * xInput, true);
                 lastWallJump = xInput;
             }
         }
@@ -255,14 +251,16 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    public void AddXVel(float addedVel, bool passesSpeedCheck)
+    public void AddXVel(float addedVel, bool passesSpeedCheck = false)
     {
-        if (Mathf.Abs(xVel + addedVel) > activeMoveSpeed)
-            addedVel = 0;
+        float totalVel = Mathf.Abs(xVel + addedVel);
+        if (totalVel > Mathf.Max(activeMoveSpeed, Mathf.Abs(xVel)))
+            addedVel = Mathf.Clamp(activeMoveSpeed - Mathf.Abs(xVel), 0, activeMoveSpeed) * Mathf.Sign(addedVel);
+        
         SetXVel(xVel + addedVel, true);
     }
 
-    public void SetXVel(float newVel, bool passesSpeedCheck)
+    public void SetXVel(float newVel, bool passesSpeedCheck = false)
     {
         if (passesSpeedCheck)
         {

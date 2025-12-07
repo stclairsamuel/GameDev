@@ -376,22 +376,7 @@ public class PlayerTracker : MonoBehaviour
         }
     }
 
-    public void AddXVel(float addedVel, bool passesSpeedCheck)
-    {
-        SetXVel(pMov.xVel + addedVel, passesSpeedCheck);
-    }
 
-    public void SetXVel(float newVel, bool passesSpeedCheck)
-    {
-        if (passesSpeedCheck)
-        {
-            pMov.xVel = newVel;
-        }
-        else
-        {
-            pMov.xVel = Mathf.Clamp(newVel, -pMov.activeMoveSpeed, pMov.activeMoveSpeed);
-        }
-    }
     
     public void OnGroundContact()
     {
