@@ -8,7 +8,13 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 2cda990e2423bbf4892e6590ba056729
+  - enabled: 0
+    path: 
+    guid: 00000000000000000000000000000000
   - enabled: 1
-    path: Assets/Scenes/Camp.unity
-    guid: 0ae9e08eb2be8d5468c17db0cf891213
+    path: Assets/Scenes/DeathScreen.unity
+    guid: 39c1091b2530d40459c7578dccd6ff05
+  - enabled: 1
+    path: Assets/Scenes/Scene1.unity
+    guid: 737ba34b713166a4f8cbca104282c790
   m_configObjects: {}

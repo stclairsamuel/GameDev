@@ -51,7 +51,7 @@ public class RusherHitbox : MonoBehaviour
     {
         if (hitBox.CompareTag("Player"))
         {
-             player.Damage(parent, 10f, Mathf.Sign(playerObject.transform.position.x - parent.transform.position.x) * knockback, freezeTime, stunTime);
+             player.Damage(parent, 10f, new Vector2(Mathf.Sign(playerObject.transform.position.x - parent.transform.position.x) * knockback, knockback), freezeTime, stunTime);
              if (rusher.chargeTimer > rusher.slowTime)
              {
                 rusher.chargeTimer = rusher.slowTime;

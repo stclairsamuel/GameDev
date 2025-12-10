@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerTracker : MonoBehaviour
 {
@@ -12,7 +13,7 @@ public class PlayerTracker : MonoBehaviour
     public PlayerMovement pMov;
     public Dash dash;
 
-    Vector2 myPos;
+    public Vector2 myPos;
 
     float stunTimer;
 
@@ -100,6 +101,11 @@ public class PlayerTracker : MonoBehaviour
         CheckWalls();
         
         Timers();
+
+        if (currentHealth <= 0)
+        {
+            SceneManager.LoadScene("DeathScreen");
+        }
     }
 
     void TestPMov()
@@ -308,8 +314,9 @@ public class PlayerTracker : MonoBehaviour
         pMov.yVel = Mathf.Clamp(pMov.yVel, -20f, Mathf.Infinity);
     }
 
-    public void Damage(GameObject hitBy, float damageAmt, float knockback, float freezeTime = 0.2f, float stunTime = 0.3f)
+    public void Damage(GameObject hitBy, float damageAmt, Vector2 knockback, float freezeTime = 0.2f, float stunTime = 0.3f)
     {
+        pMov.coyoteTimer = 0;
         if (dash.isDashing)
         {
             dash.DashEnd();
@@ -319,8 +326,8 @@ public class PlayerTracker : MonoBehaviour
             dash.dashCooldownTimer = 0.1f;
         }
 
-        externalVel.x = knockback;
-        pMov.yVel = 5f;
+        externalVel.x = knockback.x;
+        pMov.yVel = knockback.y;
 
         timeStop.RequestFreeze(freezeTime);
 
