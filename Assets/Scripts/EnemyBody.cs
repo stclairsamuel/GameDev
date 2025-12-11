@@ -7,6 +7,8 @@ public class EnemyBody : MonoBehaviour
     public float gravity;
     private Rigidbody2D rb;
 
+    public GameObject ouchies;
+
     public float xVel;
     public float yVel;
 
@@ -51,6 +53,17 @@ public class EnemyBody : MonoBehaviour
         else
         {
             hitTimer = 0;
+        }
+    }
+
+    void OnTriggerEnter2D(Collider2D hit)
+    {
+
+        if (hit == ouchies.GetComponent<Collider2D>())
+        {
+            Debug.Log("hit");
+            rb.velocity = new Vector2(rb.velocity.x, 30f);
+            hitTimer = hitTime;
         }
     }
 }
