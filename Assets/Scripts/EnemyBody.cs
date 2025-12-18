@@ -26,10 +26,8 @@ public class EnemyBody : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //rb.velocity = new Vector2(xVel, yVel);
 
-        anim.SetBool("isHit", (hitTimer > 0));
-
+        
         Timers();
     }
 
