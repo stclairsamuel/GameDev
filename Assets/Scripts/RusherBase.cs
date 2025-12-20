@@ -56,7 +56,7 @@ public class RusherBase : MonoBehaviour
 
 
     // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
         player = GameObject.FindGameObjectWithTag("Player").transform;
         transform.localScale = new Vector3(transform.localScale.x, myHeight, transform.localScale.z);

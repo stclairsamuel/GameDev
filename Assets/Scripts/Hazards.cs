@@ -24,7 +24,7 @@ public class Hazards : MonoBehaviour
     {
         if (touching == player.GetComponent<Collider2D>())
         {
-            pTracker.Damage(gameObject, 10f, new Vector2(0, 20f));
+            pTracker.Damage(gameObject, 1f, new Vector2(0, 20f));
         }
     }
 }

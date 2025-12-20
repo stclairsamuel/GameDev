@@ -2,9 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System;
 
 public class PlayerTracker : MonoBehaviour
 {
+    public event Action OnPlayerDamaged;
+
     public float startingHealth;
     public float currentHealth;
 
@@ -72,9 +75,8 @@ public class PlayerTracker : MonoBehaviour
 
 
     // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
-        currentHealth = startingHealth;
         
         transform.localScale = new Vector3 (myScale.x, myScale.y, transform.localScale.z);
         
@@ -334,6 +336,8 @@ public class PlayerTracker : MonoBehaviour
         stunTimer = stunTime;
         
         currentHealth -= damageAmt;
+
+        OnPlayerDamaged?.Invoke();
     }
 
     public void SetPos(Vector2 newPos)
