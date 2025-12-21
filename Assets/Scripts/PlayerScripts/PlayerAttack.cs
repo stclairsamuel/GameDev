@@ -26,7 +26,7 @@ public class PlayerAttack : MonoBehaviour
     {
         if (collider.TryGetComponent<EnemyBody>(out EnemyBody hitBody))
         {
-            hitBody.GetHit(gameObject, 0, 10f * pMov.facingDir);
+            hitBody.GetHit(gameObject, 10f, new Vector2(10f * pMov.facingDir, 10f));
         }
     }
 }

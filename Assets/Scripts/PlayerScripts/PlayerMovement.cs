@@ -60,8 +60,19 @@ public class PlayerMovement : MonoBehaviour
     public float wallJumpBoostTime;
     public float wallJumpBoostTimer;
 
+
+
+    void OnEnable()
+    {
+        pTracker.OnGroundContact += GroundTouch;
+    }
+    void OnDisable()
+    {
+        pTracker.OnGroundContact -= GroundTouch;
+    }
+
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         activeMoveSpeed = baseMoveSpeed;
     }
@@ -298,6 +309,11 @@ public class PlayerMovement : MonoBehaviour
             wallJumpBoostTimer -= Time.deltaTime;
         else
             wallJumpBoostTimer = 0;
+    }
+
+    private void GroundTouch()
+    {
+
     }
 
 }

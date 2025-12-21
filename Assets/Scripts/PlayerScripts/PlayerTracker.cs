@@ -8,6 +8,9 @@ public class PlayerTracker : MonoBehaviour
 {
     public event Action OnPlayerDamaged;
 
+    public event Action OnGroundContact;
+    public event Action OnWallContact;
+
     public float startingHealth;
     public float currentHealth;
 
@@ -73,6 +76,14 @@ public class PlayerTracker : MonoBehaviour
         new RaycastHit2D()
     };
 
+    private void OnEnable()
+    {
+        OnGroundContact += GroundTouch;
+    }
+    private void OnDisable()
+    {
+        OnGroundContact -= GroundTouch;
+    }
 
     // Start is called before the first frame update
     private void Awake()
@@ -240,6 +251,11 @@ public class PlayerTracker : MonoBehaviour
 
         grounded = Physics2D.BoxCast(myPos - new Vector2(0, halfHeight), new Vector2(myScale.x, 0.05f), 0, Vector2.down, 0.1f, ground);
 
+        if (grounded && !groundedLastFrame)
+        {
+            OnGroundContact?.Invoke();
+        }
+
         if (grounded && pMov.yVel < 0)
         {
             if (!groundedLastFrame && Mathf.Abs(pMov.xVel) > pMov.baseMoveSpeed)
@@ -387,15 +403,11 @@ public class PlayerTracker : MonoBehaviour
         }
     }
 
-
-    
-    public void OnGroundContact()
+    private void GroundTouch()
     {
-        
-    }
-
-    public void OnWallContact()
-    {
-
+        if (pMov.xVel > pMov.baseMoveSpeed)
+        {
+            pMov.lockSpeedTimer = pMov.lockSpeedTime;
+        }
     }
 }
