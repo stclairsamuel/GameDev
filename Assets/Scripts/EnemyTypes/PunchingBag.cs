@@ -17,6 +17,7 @@ public class PunchingBag : MonoBehaviour
     public Vector2 myPos;
 
     public LayerMask ground;
+    public bool grounded;
 
     public float xVel;
     public float yVel;
@@ -37,16 +38,15 @@ public class PunchingBag : MonoBehaviour
         col = GetComponent<Collider2D>();
     }
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
     // Update is called once per frame
     void Update()
     {
-        myPos = transform.position;
+        myPos = rb.position;
+    }
+
+    void FixedUpdate()
+    {
+        grounded = GroundCheck();
 
         Gravity();
         Drag();
@@ -61,7 +61,7 @@ public class PunchingBag : MonoBehaviour
         yVel = knockback.y;
     }
 
-    bool Grounded()
+    bool GroundCheck()
     {
         float halfHeight = col.bounds.size.y / 2f;
         groundCheck = Physics2D.BoxCast(myPos - new Vector2(0, halfHeight), new Vector2(col.bounds.size.x, 0.05f), 0, Vector2.down, 0.1f, ground);
@@ -93,9 +93,9 @@ public class PunchingBag : MonoBehaviour
 
     private void Gravity()
     {
-        if (!Grounded())
+        if (!grounded)
         {
-            yVel -= gravity * Time.deltaTime;
+            yVel -= gravity * Time.fixedDeltaTime;
         }
         else if (yVel < 0)
         {
@@ -105,13 +105,13 @@ public class PunchingBag : MonoBehaviour
 
     private void Drag()
     {
-        if (Grounded())
+        if (grounded)
         {
-            xVel *= Mathf.Exp(-groundDrag * Time.deltaTime);
+            xVel *= Mathf.Exp(-groundDrag * Time.fixedDeltaTime);
         }
         else
         {
-            xVel *= Mathf.Exp(-airDrag * Time.deltaTime);
+            xVel *= Mathf.Exp(-airDrag * Time.fixedDeltaTime);
         }
     }
 }

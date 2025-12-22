@@ -710,6 +710,7 @@ MonoBehaviour:
   ground:
     serializedVersion: 2
     m_Bits: 256
+  grounded: 0
   xVel: 0
   yVel: 0
 --- !u!1 &1305070205
@@ -13735,6 +13736,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e078129d797274d63be6eb2bed374cab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlayer:
+    serializedVersion: 2
+    m_Bits: 1024
   gravity: 40
   xVel: 0
   yVel: 0
@@ -13743,9 +13747,17 @@ MonoBehaviour:
     m_Bits: 256
   groundDrag: 10
   airDrag: 2
-  walkSpeed: 0
+  walkSpeed: 4
+  facingDir: 0
   chaseSpeed: 0
+  walkTime: 3
+  walkTimer: 0
+  waitTime: 3
+  waitTimer: 0
+  reelTime: 0.2
+  reelTimer: 0
   isChasing: 0
+  sightRange: 8
 --- !u!114 &1311942709
 MonoBehaviour:
   m_ObjectHideFlags: 0
