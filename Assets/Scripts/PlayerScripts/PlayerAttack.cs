@@ -8,6 +8,8 @@ public class PlayerAttack : MonoBehaviour
     public PlayerTracker pTracker;
     public PlayerAnimation pAnim;
 
+    public List<Collider2D> hitObjects = new List<Collider2D>();
+
     private Collider2D hitBox;
 
     // Start is called before the first frame update
@@ -20,13 +22,25 @@ public class PlayerAttack : MonoBehaviour
     void Update()
     {
         hitBox.enabled = pAnim.attackTimer > 0;
+
+        if (!hitBox.enabled && hitObjects.Count > 0)
+        {
+            hitObjects = new List<Collider2D>();
+        }
     }
 
     void OnTriggerEnter2D(Collider2D collider)
     {
+        if (hitObjects.Contains(collider))
+        {
+            return;
+        }
+
         if (collider.TryGetComponent<EnemyBody>(out EnemyBody hitBody))
         {
             hitBody.GetHit(gameObject, 10f, new Vector2(10f * pMov.facingDir, 10f));
         }
+
+        hitObjects.Add(collider);
     }
 }
