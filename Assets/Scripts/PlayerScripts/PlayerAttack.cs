@@ -8,6 +8,8 @@ public class PlayerAttack : MonoBehaviour
     public PlayerTracker pTracker;
     public PlayerAnimation pAnim;
 
+    public Vector2 knockback;
+
     public List<Collider2D> hitObjects = new List<Collider2D>();
 
     private Collider2D hitBox;
@@ -38,7 +40,7 @@ public class PlayerAttack : MonoBehaviour
 
         if (collider.TryGetComponent<EnemyBody>(out EnemyBody hitBody))
         {
-            hitBody.GetHit(gameObject, 10f, new Vector2(10f * pMov.facingDir, 10f));
+            hitBody.GetHit(gameObject, 10f, new Vector2(knockback.x * pMov.facingDir, knockback.y));
         }
 
         hitObjects.Add(collider);

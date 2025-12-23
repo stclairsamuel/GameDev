@@ -6,6 +6,7 @@ using System;
 public class EnemyBody : MonoBehaviour
 {
     public event Action<GameObject, float, Vector2> OnTakeDamage;
+    public event Action OnDeath;
 
     private Rigidbody2D rb;
 
@@ -27,9 +28,22 @@ public class EnemyBody : MonoBehaviour
 
     public void GetHit(GameObject hitBy, float damage, Vector2 knockback)
     {
-        currentHealth -= damage;
+        if (currentHealth > 0)
+        {
+            currentHealth -= damage;
+            if (currentHealth <= 0)
+            {
+                Die();
+                return;
+            }
 
-        OnTakeDamage?.Invoke(hitBy, damage, knockback);
+            OnTakeDamage?.Invoke(hitBy, damage, knockback);
+        }
+    }
+
+    public void Die()
+    {
+        OnDeath?.Invoke();
     }
 
     void Timers()

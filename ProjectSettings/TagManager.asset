@@ -15,11 +15,11 @@ TagManager:
   - 
   - 
   - ground
-  - enemies
+  - enemyBodies
   - player
   - 
-  - 
-  - 
+  - enemyHitboxes
+  - enemyAttacks
   - 
   - 
   - 

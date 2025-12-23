@@ -6,11 +6,13 @@ public class ShamblerMovement : MonoBehaviour
 {
     private Rigidbody2D rb;
     private Collider2D col;
+    private Animator anim;
+    private SpriteRenderer rend;
 
     private EnemyBody myBody;
 
-    public LayerMask isPlayer;
     private GameObject player;
+    private Vector2 pPos;
 
     public float gravity;
 
@@ -27,12 +29,18 @@ public class ShamblerMovement : MonoBehaviour
 
     public float walkSpeed;
     public int facingDir;
-    public float chaseSpeed;
+    public float maxChaseSpeed;
+    public float chaseAccel;
 
     public float walkTime;
     public float walkTimer;
     public float waitTime;
     public float waitTimer;
+
+    public float dyingTime;
+    public float dyingTimer;
+    
+    public bool dead;
 
     public float reelTime;
     public float reelTimer;
@@ -46,10 +54,12 @@ public class ShamblerMovement : MonoBehaviour
     void OnEnable()
     {
         myBody.OnTakeDamage += OnGetHit;
+        myBody.OnDeath += OnDeath;
     }
     void OnDisable()
     {
         myBody.OnTakeDamage -= OnGetHit;
+        myBody.OnDeath -= OnDeath;
     }
 
     // Start is called before the first frame update
@@ -58,6 +68,8 @@ public class ShamblerMovement : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         myBody = GetComponent<EnemyBody>();
         col = GetComponent<Collider2D>();
+        anim = GetComponent<Animator>();
+        rend = GetComponent<SpriteRenderer>();
 
         player = GameObject.FindWithTag("Player");
     }
@@ -65,28 +77,45 @@ public class ShamblerMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        myPos = rb.position;
+        transform.localScale = new Vector2(facingDir, 1);
 
         Timers();
     }
 
     void FixedUpdate()
     {
+        if (dead)
+        {
+            xVel = 0;
+            if (dyingTimer == 0)
+            {
+                Destroy(gameObject);
+            }
+        }
+
+        myPos = rb.position;
+        pPos = player.transform.position;
+
         grounded = GroundCheck();
 
         Gravity();
         Drag();
 
-        if (!isChasing)
+        if (!dead)
         {
-            Idle();
-        }
-        if (isChasing)
-        {
-
+            if (!isChasing)
+            {
+                Idle();
+            }
+            if (isChasing)
+            {
+                Chase();
+            }
         }
 
         rb.velocity = new Vector2(xVel, yVel);
+
+        Animations();
     }
 
     void OnGetHit(GameObject hitBy, float damage, Vector2 knockback)
@@ -101,8 +130,10 @@ public class ShamblerMovement : MonoBehaviour
 
     private void Idle()
     {
-        Vector2 pPos = player.transform.position;
-        isChasing = Physics2D.Raycast(myPos, (pPos - myPos), sightRange, isPlayer);
+
+        float pDist = Vector2.Distance(myPos, pPos);
+
+        isChasing = pDist < sightRange && !Physics2D.Raycast(myPos, (pPos - myPos), sightRange, ground);
 
         if (reelTimer > 0)
             return;
@@ -130,7 +161,17 @@ public class ShamblerMovement : MonoBehaviour
 
     private void Chase()
     {
-        
+        float pDist = Vector2.Distance(myPos, pPos);
+        if (pDist > sightRange)
+        {
+            isChasing = false;
+            waitTimer = waitTime;
+            return;
+        }
+
+        facingDir = (int)Mathf.Sign(pPos.x - myPos.x);
+
+        xVel = Mathf.Clamp(xVel + (chaseAccel * Time.deltaTime * facingDir), -maxChaseSpeed, maxChaseSpeed);
     }
 
     private void StartWalking()
@@ -161,14 +202,32 @@ public class ShamblerMovement : MonoBehaviour
 
     private void Drag()
     {
-        if (grounded)
+        if (!isChasing)
         {
-            xVel *= Mathf.Exp(-groundDrag * Time.fixedDeltaTime);
+            if (grounded)
+            {
+                xVel *= Mathf.Exp(-groundDrag * Time.fixedDeltaTime);
+            }
+            else
+            {
+                xVel *= Mathf.Exp(-airDrag * Time.fixedDeltaTime);
+            }
         }
-        else
-        {
-            xVel *= Mathf.Exp(-airDrag * Time.fixedDeltaTime);
-        }
+    }
+
+    private void OnDeath()
+    {
+        dyingTimer = dyingTime;
+        dead = true;
+        anim.SetBool("isDying", true);
+        xVel = 0;
+    }
+
+    private void Animations()
+    {
+        anim.SetBool("isWaiting", isWaiting);
+        anim.SetBool("isWalking", isWalking);
+        anim.SetBool("isChasing", isChasing);
     }
 
     void Timers()
@@ -187,5 +246,10 @@ public class ShamblerMovement : MonoBehaviour
             reelTimer -= Time.deltaTime;
         else
             reelTimer = 0;
+        
+        if (dyingTimer > 0)
+            dyingTimer -= Time.deltaTime;
+        else
+            dyingTimer = 0;
     }
 }
