@@ -445,8 +445,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06a761b1549a0442484b6c5dbad56763, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  myMat: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
+  flashMat: {fileID: 2100000, guid: 8acb385305493488ea9decd225458da3, type: 2}
   maxHealth: Infinity
   currentHealth: Infinity
+  flashTime: 0.1
+  flashTimer: 0
 --- !u!4 &763777009
 Transform:
   m_ObjectHideFlags: 0
@@ -481,7 +485,7 @@ Rigidbody2D:
   m_Material: {fileID: 0}
   m_Interpolate: 0
   m_SleepingMode: 1
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 4
 --- !u!61 &763777011
 BoxCollider2D:
@@ -525,6 +529,7 @@ MonoBehaviour:
   airDrag: 2
   groundDrag: 10
   myPos: {x: 0, y: 0}
+  knockbackMult: 2
   ground:
     serializedVersion: 2
     m_Bits: 256
@@ -585,6 +590,42 @@ PrefabInstance:
     - target: {fileID: 4161799692128026875, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
       propertyPath: m_Name
       value: Shambler
+      objectReference: {fileID: 0}
+    - target: {fileID: 4161799692128026876, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
+      propertyPath: m_Size.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4161799692128026876, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
+      propertyPath: m_Offset.x
+      value: -0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4161799692128026878, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
+      propertyPath: lungeRange
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4161799692128026878, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
+      propertyPath: lungeForce.x
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4161799692128026878, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
+      propertyPath: lungeForce.y
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4161799693816352365, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
+      propertyPath: m_Size.x
+      value: 0.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4161799693816352365, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
+      propertyPath: m_Size.y
+      value: 1.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4161799693816352365, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
+      propertyPath: m_Offset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4161799693816352365, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
+      propertyPath: m_Offset.y
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
@@ -14239,6 +14280,18 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3411331687244267008, guid: 02d5266782dc8c149a65782b5cd4626f, type: 3}
+      propertyPath: m_Color.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3411331687244267008, guid: 02d5266782dc8c149a65782b5cd4626f, type: 3}
+      propertyPath: m_Color.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3411331687244267008, guid: 02d5266782dc8c149a65782b5cd4626f, type: 3}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3411331687244267018, guid: 02d5266782dc8c149a65782b5cd4626f, type: 3}
       propertyPath: m_Name
       value: Enemy (Parenting)
@@ -14298,11 +14351,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6828779075008099215, guid: 06212fd9caab3439ea226df50ed26049, type: 3}
       propertyPath: knockback.x
-      value: 10
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 6828779075008099215, guid: 06212fd9caab3439ea226df50ed26049, type: 3}
       propertyPath: knockback.y
-      value: 10
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 7359569912643447442, guid: 06212fd9caab3439ea226df50ed26049, type: 3}
       propertyPath: m_Pivot.x

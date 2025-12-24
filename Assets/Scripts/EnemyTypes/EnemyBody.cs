@@ -9,28 +9,46 @@ public class EnemyBody : MonoBehaviour
     public event Action OnDeath;
 
     private Rigidbody2D rb;
+    private SpriteRenderer rend;
+
+    public Material myMat;
+    public Material flashMat;
 
     public float maxHealth;
     public float currentHealth;
+
+    public float flashTime;
+    public float flashTimer;
+
+
 
     // Start is called before the first frame update
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        rend = GetComponent<SpriteRenderer>();
         currentHealth = maxHealth;
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (flashTimer > 0)
+            rend.material = flashMat;
+        else
+            rend.material = myMat;
+
         Timers();
     }
 
     public void GetHit(GameObject hitBy, float damage, Vector2 knockback)
     {
+
         if (currentHealth > 0)
         {
             currentHealth -= damage;
+            flashTimer = flashTime;
+            
             if (currentHealth <= 0)
             {
                 Die();
@@ -48,7 +66,10 @@ public class EnemyBody : MonoBehaviour
 
     void Timers()
     {
-
+        if (flashTimer > 0)
+            flashTimer -= Time.deltaTime;
+        else
+            flashTimer = 0;
     }
 
     void OnTriggerEnter2D(Collider2D hit)

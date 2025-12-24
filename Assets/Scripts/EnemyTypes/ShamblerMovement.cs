@@ -19,6 +19,10 @@ public class ShamblerMovement : MonoBehaviour
     public float xVel;
     public float yVel;
 
+    public Vector2 lungeForce;
+    public bool canLunge;
+    public float lungeRange;
+
     bool grounded;
     public RaycastHit2D groundCheck;
     public LayerMask ground;
@@ -44,6 +48,10 @@ public class ShamblerMovement : MonoBehaviour
 
     public float reelTime;
     public float reelTimer;
+
+    public float squatTime = 1f;
+
+    public float lungeCDTime;
 
     private bool isWalking;
     private bool isWaiting;
@@ -101,16 +109,12 @@ public class ShamblerMovement : MonoBehaviour
         Gravity();
         Drag();
 
-        if (!dead)
+        if (!dead && reelTimer == 0)
         {
-            if (!isChasing)
-            {
-                Idle();
-            }
             if (isChasing)
-            {
                 Chase();
-            }
+            else
+                Idle();
         }
 
         rb.velocity = new Vector2(xVel, yVel);
@@ -130,13 +134,13 @@ public class ShamblerMovement : MonoBehaviour
 
     private void Idle()
     {
-
         float pDist = Vector2.Distance(myPos, pPos);
 
-        isChasing = pDist < sightRange && !Physics2D.Raycast(myPos, (pPos - myPos), sightRange, ground);
-
-        if (reelTimer > 0)
-            return;
+        if (pDist < sightRange && !Physics2D.Raycast(myPos, (pPos - myPos), sightRange, ground))
+        {
+            isChasing = true;
+            walkTimer = 0;
+        }
 
         bool wasWalking = isWalking;
         isWalking = walkTimer > 0;
@@ -155,8 +159,15 @@ public class ShamblerMovement : MonoBehaviour
 
         if (isWalking)
         {
+            if (FrontCheck())
+                facingDir *= -1;
             xVel = walkSpeed * facingDir;
         }
+    }
+
+    private bool FrontCheck()
+    {
+        return Physics2D.BoxCast(myPos, col.bounds.extents * 0.8f, 0, Vector2.right * facingDir, 0.2f, ground);
     }
 
     private void Chase()
@@ -169,6 +180,11 @@ public class ShamblerMovement : MonoBehaviour
             return;
         }
 
+        if (canLunge)
+        {
+            StartLunge();
+        }
+
         facingDir = (int)Mathf.Sign(pPos.x - myPos.x);
 
         xVel = Mathf.Clamp(xVel + (chaseAccel * Time.deltaTime * facingDir), -maxChaseSpeed, maxChaseSpeed);
@@ -179,6 +195,23 @@ public class ShamblerMovement : MonoBehaviour
         facingDir = Random.Range(0, 2) * 2 - 1;
 
         walkTimer = walkTime;
+    }
+
+    private void StartLunge()
+    {
+
+    }
+
+    private IEnumerator Lunge()
+    {
+        xVel = 0;
+        yVel = 0;
+        anim.SetBool("isSquating", true);
+        yield return new WaitForSeconds(squatTime);
+
+        anim.SetBool("isSquating", false);
+
+        StopCoroutine(Lunge());
     }
 
     public bool GroundCheck()
@@ -228,6 +261,9 @@ public class ShamblerMovement : MonoBehaviour
         anim.SetBool("isWaiting", isWaiting);
         anim.SetBool("isWalking", isWalking);
         anim.SetBool("isChasing", isChasing);
+        anim.SetBool("isHurt", reelTimer > 0);
+        if (grounded && yVel <= 0)
+            anim.SetBool("isLunging", false);
     }
 
     void Timers()

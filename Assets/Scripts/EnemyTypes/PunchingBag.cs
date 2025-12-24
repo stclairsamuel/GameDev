@@ -16,6 +16,8 @@ public class PunchingBag : MonoBehaviour
 
     public Vector2 myPos;
 
+    public float knockbackMult;
+
     public LayerMask ground;
     public bool grounded;
 
@@ -57,8 +59,8 @@ public class PunchingBag : MonoBehaviour
 
     private void OnGetHit(GameObject hitBy, float damage, Vector2 knockback)
     {
-        xVel = knockback.x;
-        yVel = knockback.y;
+        xVel = knockback.x * knockbackMult;
+        yVel = knockback.y * knockbackMult;
     }
 
     bool GroundCheck()

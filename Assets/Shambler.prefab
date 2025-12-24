@@ -149,8 +149,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06a761b1549a0442484b6c5dbad56763, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  myMat: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
+  flashMat: {fileID: 2100000, guid: 8acb385305493488ea9decd225458da3, type: 2}
   maxHealth: 40
   currentHealth: 0
+  flashTime: 0.1
+  flashTimer: 0
 --- !u!114 &4161799692128026878
 MonoBehaviour:
   m_ObjectHideFlags: 0
