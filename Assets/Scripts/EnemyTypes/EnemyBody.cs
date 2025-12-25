@@ -20,6 +20,8 @@ public class EnemyBody : MonoBehaviour
     public float flashTime;
     public float flashTimer;
 
+    public ParticleSystem hurtParticles;
+
 
 
     // Start is called before the first frame update
@@ -48,7 +50,9 @@ public class EnemyBody : MonoBehaviour
         {
             currentHealth -= damage;
             flashTimer = flashTime;
-            
+
+            SummonHurtParticles(Mathf.Sign(knockback.x) * Vector2.right);
+
             if (currentHealth <= 0)
             {
                 Die();
@@ -57,6 +61,13 @@ public class EnemyBody : MonoBehaviour
 
             OnTakeDamage?.Invoke(hitBy, damage, knockback);
         }
+    }
+
+    private void SummonHurtParticles(Vector2 attackDirection)
+    {
+        Quaternion rotation = Quaternion.FromToRotation(Vector2.right, attackDirection);
+
+        Instantiate(hurtParticles, transform.position, rotation);
     }
 
     public void Die()

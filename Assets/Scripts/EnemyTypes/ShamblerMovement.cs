@@ -56,6 +56,8 @@ public class ShamblerMovement : MonoBehaviour
     private bool isWalking;
     private bool isWaiting;
 
+    private bool readyingAttack;
+
     public bool isChasing;
     public float sightRange;
 
@@ -80,6 +82,8 @@ public class ShamblerMovement : MonoBehaviour
         rend = GetComponent<SpriteRenderer>();
 
         player = GameObject.FindWithTag("Player");
+
+        facingDir = 1;
     }
 
     // Update is called once per frame
@@ -109,9 +113,15 @@ public class ShamblerMovement : MonoBehaviour
         Gravity();
         Drag();
 
-        if (!dead && reelTimer == 0)
+
+
+        if (!dead && reelTimer == 0 && grounded)
         {
-            if (isChasing)
+            if (readyingAttack)
+            
+                xVel = 0;
+            
+            else if (isChasing)
                 Chase();
             else
                 Idle();
@@ -126,10 +136,10 @@ public class ShamblerMovement : MonoBehaviour
     {
         reelTimer = reelTime;
 
-        if (grounded)
-        {
-            xVel = knockback.x;
-        }
+        xVel = knockback.x;
+        
+        if (!grounded)
+            yVel = knockback.y;
     }
 
     private void Idle()
@@ -180,6 +190,8 @@ public class ShamblerMovement : MonoBehaviour
             return;
         }
 
+        canLunge = grounded && yVel <= 0 && pDist < lungeRange && !readyingAttack;
+
         if (canLunge)
         {
             StartLunge();
@@ -199,17 +211,20 @@ public class ShamblerMovement : MonoBehaviour
 
     private void StartLunge()
     {
-
+        StartCoroutine(Lunge());
     }
 
     private IEnumerator Lunge()
     {
-        xVel = 0;
-        yVel = 0;
         anim.SetBool("isSquating", true);
+        readyingAttack = true;
         yield return new WaitForSeconds(squatTime);
 
         anim.SetBool("isSquating", false);
+        anim.SetBool("isLunging", true);
+        readyingAttack = false;
+        xVel = lungeForce.x * facingDir;
+        yVel = lungeForce.y;
 
         StopCoroutine(Lunge());
     }
@@ -250,6 +265,7 @@ public class ShamblerMovement : MonoBehaviour
 
     private void OnDeath()
     {
+        StopCoroutine(Lunge());
         dyingTimer = dyingTime;
         dead = true;
         anim.SetBool("isDying", true);

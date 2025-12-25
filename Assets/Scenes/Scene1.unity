@@ -451,6 +451,7 @@ MonoBehaviour:
   currentHealth: Infinity
   flashTime: 0.1
   flashTimer: 0
+  hurtParticles: {fileID: 0}
 --- !u!4 &763777009
 Transform:
   m_ObjectHideFlags: 0
@@ -591,25 +592,13 @@ PrefabInstance:
       propertyPath: m_Name
       value: Shambler
       objectReference: {fileID: 0}
-    - target: {fileID: 4161799692128026876, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
-      propertyPath: m_Size.x
-      value: 0.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 4161799692128026876, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
-      propertyPath: m_Offset.x
-      value: -0.1
-      objectReference: {fileID: 0}
     - target: {fileID: 4161799692128026878, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
       propertyPath: lungeRange
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 4161799692128026878, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
       propertyPath: lungeForce.x
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 4161799692128026878, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
-      propertyPath: lungeForce.y
-      value: 10
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 4161799693816352365, guid: 178bd7898908e4b7ead725146ae8394d, type: 3}
       propertyPath: m_Size.x
@@ -14351,11 +14340,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6828779075008099215, guid: 06212fd9caab3439ea226df50ed26049, type: 3}
       propertyPath: knockback.x
-      value: 5
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 6828779075008099215, guid: 06212fd9caab3439ea226df50ed26049, type: 3}
       propertyPath: knockback.y
-      value: 5
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7359569912643447442, guid: 06212fd9caab3439ea226df50ed26049, type: 3}
       propertyPath: m_Pivot.x
