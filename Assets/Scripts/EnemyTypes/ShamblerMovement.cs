@@ -16,12 +16,19 @@ public class ShamblerMovement : MonoBehaviour
 
     public float gravity;
 
+    private float pDist;
+
     public float xVel;
     public float yVel;
 
     public Vector2 lungeForce;
     public bool canLunge;
     public float lungeRange;
+    public float lungeCDTime;
+    private float lungeCDTimer;
+    private bool isLunging;
+    public int lungeStep;
+    public float crouchTime;
 
     bool grounded;
     public RaycastHit2D groundCheck;
@@ -43,23 +50,17 @@ public class ShamblerMovement : MonoBehaviour
 
     public float dyingTime;
     public float dyingTimer;
-    
-    public bool dead;
 
     public float reelTime;
     public float reelTimer;
 
-    public float squatTime = 1f;
-
-    public float lungeCDTime;
-
-    private bool isWalking;
-    private bool isWaiting;
-
-    private bool readyingAttack;
-
     public bool isChasing;
     public float sightRange;
+
+    public int myMoveState;
+
+    private Coroutine idleCoroutine;
+    private Coroutine lungeCoroutine;
 
     void OnEnable()
     {
@@ -91,41 +92,26 @@ public class ShamblerMovement : MonoBehaviour
     {
         transform.localScale = new Vector2(facingDir, 1);
 
+        pDist = Vector2.Distance(myPos, pPos);
+
+        StateHandler();
+
         Timers();
     }
 
     void FixedUpdate()
     {
-        if (dead)
-        {
-            xVel = 0;
-            if (dyingTimer == 0)
-            {
-                Destroy(gameObject);
-            }
-        }
 
         myPos = rb.position;
         pPos = player.transform.position;
 
         grounded = GroundCheck();
 
+        if (myMoveState == 2)
+            Chase();
+
         Gravity();
         Drag();
-
-
-
-        if (!dead && reelTimer == 0 && grounded)
-        {
-            if (readyingAttack)
-            
-                xVel = 0;
-            
-            else if (isChasing)
-                Chase();
-            else
-                Idle();
-        }
 
         rb.velocity = new Vector2(xVel, yVel);
 
@@ -139,94 +125,191 @@ public class ShamblerMovement : MonoBehaviour
         xVel = knockback.x;
         
         if (!grounded)
+            xVel = knockback.x * 2f;
             yVel = knockback.y;
     }
 
-    private void Idle()
+    private void StartIdle()
     {
-        float pDist = Vector2.Distance(myPos, pPos);
-
-        if (pDist < sightRange && !Physics2D.Raycast(myPos, (pPos - myPos), sightRange, ground))
+        if (lungeCoroutine != null)
         {
-            isChasing = true;
+            StopCoroutine(Lunge());
+            lungeCoroutine = null;
+        }
+
+        if (idleCoroutine == null)
+            idleCoroutine = StartCoroutine(Idle());
+    }
+
+    private IEnumerator Idle()
+    {
+        while (true)
+        {
+            waitTimer = 0;
             walkTimer = 0;
-        }
 
-        bool wasWalking = isWalking;
-        isWalking = walkTimer > 0;
-
-        if (wasWalking && !isWalking)
-        {
             waitTimer = waitTime;
-        }
 
-        if (!isWalking && waitTimer == 0)
+            while (waitTimer > 0)
+            {
+                if (reelTimer > 0)
+                    yield return new WaitUntil(() => reelTimer == 0);
+                
+                yield return null;
+            }
+
+            walkTimer = walkTime;
+            facingDir = Random.Range(0, 2) * 2 - 1;
+                
+            while (walkTimer > 0)
+            {
+                if (reelTimer > 0)
+                    yield return new WaitUntil(() => reelTimer == 0);
+                
+                if (FrontCheck())
+                {
+                    facingDir *= -1;
+                }
+                    
+                xVel = walkSpeed * facingDir;
+
+                yield return null;
+            }
+        }
+    }
+
+    private void StartChase()
+    {
+        if (idleCoroutine != null)
         {
-            StartWalking();
+            StopCoroutine(idleCoroutine);
+            idleCoroutine = null;
         }
 
-        isWaiting = !isWalking;
-
-        if (isWalking)
+        if (lungeCoroutine != null)
         {
-            if (FrontCheck())
-                facingDir *= -1;
-            xVel = walkSpeed * facingDir;
+            StopCoroutine(lungeCoroutine);
+            lungeCoroutine = null;
         }
+    }
+
+    private void Chase()
+    {
+        if (reelTimer > 0)
+            return;
+
+        facingDir = (int)Mathf.Sign(pPos.x - myPos.x);
+
+        xVel = Mathf.Clamp(xVel + (chaseAccel * Time.fixedDeltaTime * facingDir), -maxChaseSpeed, maxChaseSpeed);
+    }
+
+    private void StartLunge()
+    {
+        if (idleCoroutine != null)
+        {
+            StopCoroutine(idleCoroutine);
+            idleCoroutine = null;
+        }
+
+        if (lungeCoroutine == null)
+            lungeCoroutine = StartCoroutine(Lunge());
+    }
+
+    private IEnumerator Lunge()
+    {
+        lungeStep = 0;
+        xVel = 0;
+
+        yield return new WaitForSeconds(crouchTime);
+
+        lungeStep = 1;
+
+        xVel = lungeForce.x * facingDir;
+        yVel = lungeForce.y;
+
+        yield return new WaitUntil(() => grounded && yVel <= 0);
+
+        lungeStep = 2;
+
+        lungeCDTimer = lungeCDTime;
+    }
+
+    private void StartFall()
+    {
+
+    }
+
+    private void StateHandler()
+    {
+        if (myMoveState == 0)
+            if (grounded)
+                SwitchStates((MoveState)1);
+        
+        if (myMoveState == 1)
+        {
+            if (!grounded)
+                SwitchStates((MoveState)0);
+
+            if (pDist < sightRange && !Physics2D.Raycast(myPos, (pPos - myPos), sightRange, ground))
+                SwitchStates((MoveState)2);
+        };
+        if (myMoveState == 2)
+        {
+            if (!grounded)
+                SwitchStates((MoveState)0);
+
+            if (pDist > sightRange)
+                SwitchStates((MoveState)1);
+            
+            if (pDist < lungeRange && lungeCDTimer == 0)
+                SwitchStates((MoveState)3);
+        }
+        if (myMoveState == 3)
+        {
+            if (grounded && yVel <= 0 && lungeStep == 2)
+                SwitchStates((MoveState)2);
+            
+            if (reelTimer > 0 && lungeStep == 0)
+                SwitchStates((MoveState)2);
+        }
+    }
+
+    private void SwitchStates(MoveState state)
+    {
+        myMoveState = (int)state;
+
+        switch (state)
+        {
+            case MoveState.None:
+                StartFall();
+                break;
+
+            case MoveState.Idling:
+                StartIdle();
+                break;
+
+            case MoveState.Chasing:
+                StartChase();
+                break;
+            
+            case MoveState.Striking:
+                StartLunge();
+                break;
+        }
+    }
+
+
+
+    private void Walk()
+    {
+        if (FrontCheck())
+            facingDir *= -1;
+        xVel = walkSpeed * facingDir;
     }
 
     private bool FrontCheck()
     {
         return Physics2D.BoxCast(myPos, col.bounds.extents * 0.8f, 0, Vector2.right * facingDir, 0.2f, ground);
-    }
-
-    private void Chase()
-    {
-        float pDist = Vector2.Distance(myPos, pPos);
-        if (pDist > sightRange)
-        {
-            isChasing = false;
-            waitTimer = waitTime;
-            return;
-        }
-
-        canLunge = grounded && yVel <= 0 && pDist < lungeRange && !readyingAttack;
-
-        if (canLunge)
-        {
-            StartLunge();
-        }
-
-        facingDir = (int)Mathf.Sign(pPos.x - myPos.x);
-
-        xVel = Mathf.Clamp(xVel + (chaseAccel * Time.deltaTime * facingDir), -maxChaseSpeed, maxChaseSpeed);
-    }
-
-    private void StartWalking()
-    {
-        facingDir = Random.Range(0, 2) * 2 - 1;
-
-        walkTimer = walkTime;
-    }
-
-    private void StartLunge()
-    {
-        StartCoroutine(Lunge());
-    }
-
-    private IEnumerator Lunge()
-    {
-        anim.SetBool("isSquating", true);
-        readyingAttack = true;
-        yield return new WaitForSeconds(squatTime);
-
-        anim.SetBool("isSquating", false);
-        anim.SetBool("isLunging", true);
-        readyingAttack = false;
-        xVel = lungeForce.x * facingDir;
-        yVel = lungeForce.y;
-
-        StopCoroutine(Lunge());
     }
 
     public bool GroundCheck()
@@ -248,38 +331,53 @@ public class ShamblerMovement : MonoBehaviour
         }
     }
 
+
+
     private void Drag()
     {
-        if (!isChasing)
+        if ((myMoveState == 1 && waitTimer > 0) || (myMoveState == -1 && grounded))
         {
-            if (grounded)
-            {
-                xVel *= Mathf.Exp(-groundDrag * Time.fixedDeltaTime);
-            }
-            else
-            {
-                xVel *= Mathf.Exp(-airDrag * Time.fixedDeltaTime);
-            }
+            xVel *= Mathf.Exp(-groundDrag * Time.fixedDeltaTime);
+        }
+        if (myMoveState == 0 || (myMoveState == 4 && !grounded))
+        {
+            xVel *= Mathf.Exp(-airDrag * Time.fixedDeltaTime);
         }
     }
 
     private void OnDeath()
     {
-        StopCoroutine(Lunge());
+        StartCoroutine(DeathProcess());
+    }
+
+    private IEnumerator DeathProcess()
+    {
         dyingTimer = dyingTime;
-        dead = true;
         anim.SetBool("isDying", true);
-        xVel = 0;
+        myMoveState = -1;
+        StopCoroutine(Idle());
+
+        yield return new WaitUntil(() => dyingTimer == 0);
+
+        Destroy(gameObject);
     }
 
     private void Animations()
     {
-        anim.SetBool("isWaiting", isWaiting);
-        anim.SetBool("isWalking", isWalking);
-        anim.SetBool("isChasing", isChasing);
+        if (myMoveState == 1)
+        {
+            anim.SetBool("isWaiting", waitTimer > 0);
+            anim.SetBool("isWalking", walkTimer > 0);
+        }
+        else
+        {
+            anim.SetBool("isWaiting", false);
+            anim.SetBool("isWalking", false);
+        }
+        anim.SetBool("isChasing", myMoveState == 2);
         anim.SetBool("isHurt", reelTimer > 0);
-        if (grounded && yVel <= 0)
-            anim.SetBool("isLunging", false);
+        anim.SetBool("isSquating", myMoveState == 3 && lungeStep == 0);
+        anim.SetBool("isLunging", lungeStep == 1);
     }
 
     void Timers()
@@ -303,5 +401,10 @@ public class ShamblerMovement : MonoBehaviour
             dyingTimer -= Time.deltaTime;
         else
             dyingTimer = 0;
+        
+        if (lungeCDTimer > 0)
+            lungeCDTimer -= Time.deltaTime;
+        else
+            lungeCDTimer = 0;
     }
 }

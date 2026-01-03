@@ -22,8 +22,6 @@ public class EnemyBody : MonoBehaviour
 
     public ParticleSystem hurtParticles;
 
-
-
     // Start is called before the first frame update
     void Awake()
     {
@@ -87,4 +85,13 @@ public class EnemyBody : MonoBehaviour
     {
         
     }
+}
+
+public enum MoveState
+{
+    Dying = -1,
+    None = 0,
+    Idling = 1,
+    Chasing = 2,
+    Striking = 3
 }
