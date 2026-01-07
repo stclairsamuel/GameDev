@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class Hazards : MonoBehaviour
 {
@@ -8,10 +9,12 @@ public class Hazards : MonoBehaviour
 
     public PlayerTracker pTracker;
 
+    private Tilemap hazardTilemap;
+
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
-        
+        hazardTilemap = GetComponent<Tilemap>();
     }
 
     // Update is called once per frame
@@ -22,9 +25,23 @@ public class Hazards : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D touching)
     {
+
         if (touching == player.GetComponent<Collider2D>())
         {
-            pTracker.Damage(gameObject, 1f, new Vector2(0, 20f));
+
+            Vector2 hitPos = touching.bounds.center;
+            Vector3Int cell = hazardTilemap.WorldToCell(hitPos);
+
+            HazardTile tile = hazardTilemap.GetTile<HazardTile>(cell);
+
+            if (tile != null)
+                ApplyHazard(tile);
+            
         }
+    }
+
+    void ApplyHazard(HazardTile tile)
+    {
+        pTracker.Damage(gameObject, tile.damage, tile.hitDirection * tile.knockback, 0, 0.2f);
     }
 }

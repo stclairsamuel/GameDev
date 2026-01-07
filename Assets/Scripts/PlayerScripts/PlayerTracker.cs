@@ -219,7 +219,7 @@ public class PlayerTracker : MonoBehaviour
             grabbingWall = false;
         }
 
-        if (Mathf.Sign(ReturnXVel(pMov.xVel)) == -1 && touchingLeft || Mathf.Sign(ReturnXVel(pMov.xVel)) == 1 && touchingRight) { pMov.xVel = 0; }
+        if ((Mathf.Sign(ReturnXVel(pMov.xVel)) == -1 && touchingLeft || Mathf.Sign(ReturnXVel(pMov.xVel)) == 1 && touchingRight)) { pMov.xVel = 0; }
 
         if (touchingLeft && !grounded && pMov.xInput != -1)
         {

@@ -13,6 +13,11 @@ public class Thingy_Movement : MonoBehaviour
 
     private GameObject player;
     private Vector2 pPos;
+    private Vector2 pDir;
+    
+    private Vector2 myPos;
+
+    public float speed;
 
     int facingDir;
 
@@ -23,6 +28,15 @@ public class Thingy_Movement : MonoBehaviour
     public float airDrag;
 
     public TimeStop timeStop;
+
+    public Vector2 targetPos;
+
+    public float reelTime;
+    private float reelTimer;
+
+    public float speedCap;
+
+    public LayerMask ground;
 
     void OnEnable()
     {
@@ -51,24 +65,63 @@ public class Thingy_Movement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        myPos = transform.position;
+        pPos = player.transform.position;
+
+        pDir = (pPos - myPos).normalized;
+
+        Animation();
+
+        Timers();
+
+
     }
 
     void FixedUpdate()
     {
-        Gravity();
+        //Gravity();
+        if (reelTimer > 0)
+            Drag();
+        else
+            Move();
+        
+        if (reelTimer > 0)
+            WallCheck();
 
         rb.velocity = new Vector2(xVel, yVel);
     }
 
     void OnGetHit(GameObject hitBy, float dmg, Vector2 knockback)
     {
+        reelTimer = reelTime;
+
         timeStop.RequestFreeze(0.6f);
 
-        Vector2 knockbackMult = new Vector2(5f, 2.5f);
+        Vector2 knockbackMult = new Vector2(20f, 1f);
 
         xVel = knockback.x * knockbackMult.x;
         yVel = knockback.y * knockbackMult.y;
+    }
+
+    void WallCheck()
+    {
+        RaycastHit2D backCheck = Physics2D.Raycast(myPos, new Vector2(xVel, yVel), 0.6f, ground);
+
+        if (backCheck)
+        {
+            timeStop.RequestFreeze(0.6f);
+
+            Vector2 norm = backCheck.normal;
+
+            xVel = Vector2.Reflect(rb.velocity, norm).x;
+            yVel = Vector2.Reflect(rb.velocity, norm).y;
+        }
+    }
+
+    void Move()
+    {
+        xVel = Mathf.Clamp(xVel + (speed * pDir.x * Time.fixedDeltaTime), -speedCap, speedCap);
+        yVel = Mathf.Clamp(yVel + (speed * pDir.y * Time.fixedDeltaTime), -speedCap, speedCap);
     }
 
     void Gravity()
@@ -78,11 +131,24 @@ public class Thingy_Movement : MonoBehaviour
 
     void Drag()
     {
-        xVel *= Mathf.Exp(-airDrag);
+        xVel *= Mathf.Exp(-airDrag * Time.fixedDeltaTime);
     }
 
-    void OnDeath()
+    void OnDeath(GameObject hitBy, float damage, Vector2 knockback)
     {
 
+    }
+
+    void Timers()
+    {
+        if (reelTimer > 0)
+            reelTimer -= Time.deltaTime;
+        else
+            reelTimer = 0;
+    }
+
+    void Animation()
+    {
+        anim.SetBool("isHurt", reelTimer > 0);
     }
 }

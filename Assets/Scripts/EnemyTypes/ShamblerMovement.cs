@@ -85,6 +85,34 @@ public class ShamblerMovement : MonoBehaviour
         player = GameObject.FindWithTag("Player");
 
         facingDir = 1;
+
+        lungeCDTimer = lungeCDTime;
+
+        if (transform.parent != null)
+        {
+            // Access the parent GameObject's tag
+            if (transform.parent.CompareTag("Node"))
+            {
+                StartCoroutine(SpawnCycle());
+            }
+        }
+    }
+
+    private IEnumerator SpawnCycle()
+    {
+        myMoveState = 0;
+        sightRange = Mathf.Infinity;
+        col.enabled = false;
+        rb.simulated = false;
+
+        yield return new WaitForSeconds(1f);
+
+        col.enabled = true;
+        rb.simulated = true;
+
+        yVel = 0;
+
+        SwitchStates((MoveState)2);
     }
 
     // Update is called once per frame
@@ -125,8 +153,12 @@ public class ShamblerMovement : MonoBehaviour
         xVel = knockback.x;
         
         if (!grounded)
+        {
             xVel = knockback.x * 2f;
             yVel = knockback.y;
+        }
+        
+        SwitchStates((MoveState)2);
     }
 
     private void StartIdle()
@@ -138,7 +170,9 @@ public class ShamblerMovement : MonoBehaviour
         }
 
         if (idleCoroutine == null)
+        {
             idleCoroutine = StartCoroutine(Idle());
+        }
     }
 
     private IEnumerator Idle()
@@ -190,6 +224,7 @@ public class ShamblerMovement : MonoBehaviour
         {
             StopCoroutine(lungeCoroutine);
             lungeCoroutine = null;
+            lungeCDTimer = lungeCDTime;
         }
     }
 
@@ -218,7 +253,8 @@ public class ShamblerMovement : MonoBehaviour
     private IEnumerator Lunge()
     {
         lungeStep = 0;
-        xVel = 0;
+        if (reelTimer == 0)
+            xVel = 0;
 
         yield return new WaitForSeconds(crouchTime);
 
@@ -250,7 +286,7 @@ public class ShamblerMovement : MonoBehaviour
             if (!grounded)
                 SwitchStates((MoveState)0);
 
-            if (pDist < sightRange && !Physics2D.Raycast(myPos, (pPos - myPos), sightRange, ground))
+            if (pDist < sightRange && !Physics2D.Raycast(myPos, (pPos - myPos), pDist, ground))
                 SwitchStates((MoveState)2);
         };
         if (myMoveState == 2)
@@ -345,7 +381,7 @@ public class ShamblerMovement : MonoBehaviour
         }
     }
 
-    private void OnDeath()
+    private void OnDeath(GameObject hitBy, float damage, Vector2 knockback)
     {
         StartCoroutine(DeathProcess());
     }

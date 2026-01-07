@@ -6,7 +6,7 @@ using System;
 public class EnemyBody : MonoBehaviour
 {
     public event Action<GameObject, float, Vector2> OnTakeDamage;
-    public event Action OnDeath;
+    public event Action<GameObject, float, Vector2> OnDeath;
 
     private Rigidbody2D rb;
     private SpriteRenderer rend;
@@ -53,7 +53,7 @@ public class EnemyBody : MonoBehaviour
 
             if (currentHealth <= 0)
             {
-                Die();
+                Die(hitBy, damage, knockback);
                 return;
             }
 
@@ -68,9 +68,9 @@ public class EnemyBody : MonoBehaviour
         Instantiate(hurtParticles, transform.position, rotation);
     }
 
-    public void Die()
+    public void Die(GameObject hitBy, float damage, Vector2 knockback)
     {
-        OnDeath?.Invoke();
+        OnDeath?.Invoke(hitBy, damage, knockback);
     }
 
     void Timers()

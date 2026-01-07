@@ -9,6 +9,8 @@ public class MawbatMovement : MonoBehaviour
     private Animator anim;
     private SpriteRenderer rend;
 
+    public GameObject biteHitbox;
+
     private EnemyBody myBody;
 
     private GameObject player;
@@ -17,12 +19,18 @@ public class MawbatMovement : MonoBehaviour
     public Vector2 pPos;
 
     public Vector2 pDir;
+    public Rigidbody2D pRb;
 
-    private int facingDir;
+    public int facingDir;
+
+    private bool readyingAttack;
 
     [Header("ChaseStuff")]
 
     public Vector2 targetPos;
+
+    public float flyingXGap;
+    public float attackingXGap;
 
     public float flapIntervalMin;
     public float flapIntervalMax;
@@ -34,11 +42,28 @@ public class MawbatMovement : MonoBehaviour
     public Vector2 flapForce;
     public float gravity;
 
-    public float idealHeight;
+    public float idealFlyingHeight;
+    public float idealAttackHeight;
 
     public float idealClearance;
 
     private Coroutine chaseCoroutine = null;
+
+
+    [Header("AttackStuff")]
+
+    public float readyIntervalMax;
+    public float readyIntervalMin;
+
+    public float attackForce;
+
+    public float attackTime;
+
+    public float attackCDIntervalMax;
+    public float attackCDIntervalMin;
+    private float attackCDTimer;
+
+    private Coroutine attackingCoroutine = null;
 
     float pDist;
 
@@ -54,9 +79,13 @@ public class MawbatMovement : MonoBehaviour
     public float reelTime;
     float reelTimer;
 
+    private bool dying;
+
     private bool isFlapping;
 
     public LayerMask ground;
+
+    public GameObject deathExplosion;
 
     void OnEnable()
     {
@@ -72,6 +101,10 @@ public class MawbatMovement : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
+        myMoveState = 0;
+
+        facingDir = 1;
+
         rb = GetComponent<Rigidbody2D>();
         myBody = GetComponent<EnemyBody>();
         col = GetComponent<Collider2D>();
@@ -79,17 +112,73 @@ public class MawbatMovement : MonoBehaviour
         rend = GetComponent<SpriteRenderer>();
 
         player = GameObject.FindWithTag("Player");
+        pRb = player.GetComponent<Rigidbody2D>();
+
+        pPos = pRb.position;
+        myPos = rb.position;
+
+        if (transform.parent != null)
+        {
+            // Access the parent GameObject's tag
+            if (transform.parent.CompareTag("Node"))
+            {
+                StartCoroutine(SpawnCycle());
+            }
+        }
+    }
+
+    private IEnumerator SpawnCycle()
+    {
+        myMoveState = 0;
+        sightRange = Mathf.Infinity;
+        col.enabled = false;
+        rb.simulated = false;
+
+        yield return new WaitForSeconds(1f);
+
+        col.enabled = true;
+        rb.simulated = true;
+
+        yVel = 0;
+
+        SwitchStates((MoveState)2);
     }
 
     // Update is called once per frame
     void Update()
     {
         myPos = rb.position;
-        pPos = player.GetComponent<Rigidbody2D>().position;
+        pPos = pRb.position;
+
+        transform.localScale = new Vector3(-facingDir, 1, 0);
 
         pDir = (pPos - myPos);
 
         pDist = Vector2.Distance(pPos, myPos);
+
+        if (pDist < 6f && attackingCoroutine == null && attackCDTimer == 0 && myMoveState == 2)
+        {
+            attackingCoroutine = StartCoroutine(ReadyAttack());
+        }
+
+        if (readyingAttack && pDist > 6f)
+        {
+            SwitchStates((MoveState)2);
+        }
+
+        if (myBody.currentHealth <= 0)
+            myMoveState = -1;
+
+        biteHitbox.SetActive(myMoveState == 3);
+
+        if (dying)
+        {
+            if (Physics2D.BoxCast(myPos, col.bounds.size * 0.8f, 0, Vector2.down, 0.2f, ground))
+            {
+                Instantiate(deathExplosion, myPos, Quaternion.identity);
+                Destroy(gameObject);
+            }
+        }
 
         Timers();
 
@@ -99,12 +188,14 @@ public class MawbatMovement : MonoBehaviour
 
     void FixedUpdate()
     {
+
+        
         if (myMoveState == 0)
         {
             Wait();
         }
 
-        if (myMoveState == 2)
+        if (myMoveState == 2 || myMoveState == -1)
         {
             Gravity();
         }
@@ -122,6 +213,31 @@ public class MawbatMovement : MonoBehaviour
         yVel = knockback.y;
 
         reelTimer = reelTime;
+
+        if (attackingCoroutine != null)
+        {
+            SwitchStates((MoveState)2);
+        }
+    }
+
+    private IEnumerator ReadyAttack()
+    {
+        readyingAttack = true;
+
+        yield return new WaitForSeconds(Random.Range(readyIntervalMin, readyIntervalMax));
+        yield return new WaitUntil(() => (Mathf.Abs(myPos.y - pPos.y) < 0.4f && pDist < 2f));
+
+        SwitchStates((MoveState)3);
+
+        readyingAttack = false;
+        
+        xVel = facingDir * attackForce;
+        yVel = 0;
+
+        yield return new WaitForSeconds(attackTime);
+        attackCDTimer = Random.Range(attackCDIntervalMin, attackCDIntervalMax);
+
+        SwitchStates((MoveState)2);
     }
 
     private void Gravity()
@@ -131,16 +247,34 @@ public class MawbatMovement : MonoBehaviour
 
     private void Wait()
     {
-        bool seePlayer = !Physics2D.Raycast(myPos, pDir, sightRange, ground);
+        pDist = Vector2.Distance(pPos, myPos);
+
+        bool seePlayer = !Physics2D.Raycast(myPos, pDir, pDist, ground) && pDist < sightRange;
 
         if (seePlayer)
         {
             SwitchStates((MoveState)2);
         }
+
+        RaycastHit2D topCheck = Physics2D.Raycast(myPos, Vector2.up, 100f, ground);
+        float halfHeight = col.bounds.size.y/2f;
+
+        if (topCheck)
+        {
+            //transform.position = new Vector2(myPos.x, topCheck.point.y - halfHeight);
+        }
     }
 
     private void StartChase()
     {
+        if (attackingCoroutine != null)
+        {
+            attackCDTimer = Random.Range(attackCDIntervalMin, attackCDIntervalMax);
+            StopCoroutine(attackingCoroutine);
+            attackingCoroutine = null;
+            readyingAttack = false;
+        }
+
         if (chaseCoroutine == null)
             chaseCoroutine = StartCoroutine(Chase());
     }
@@ -153,13 +287,14 @@ public class MawbatMovement : MonoBehaviour
 
             while (flapIntervalTimer > 0)
             {
+                float idealHeight = readyingAttack ? idealAttackHeight : idealFlyingHeight;
 
                 bool underHeight = Physics2D.BoxCast(myPos, col.bounds.size, 0, Vector2.down, idealHeight, ground);
                 bool aboveClearance = Physics2D.BoxCast(myPos, col.bounds.size, 0, Vector2.up, idealClearance, ground);
 
                 facingDir = (int)Mathf.Sign(pPos.x - myPos.x);
 
-                float xGap = 4f;
+                float xGap = readyingAttack ? attackingXGap : flyingXGap;
                 targetPos = new Vector2(pPos.x + (xGap * -facingDir), pPos.y + idealHeight);
 
                 if (myPos.y < pPos.y)
@@ -189,6 +324,15 @@ public class MawbatMovement : MonoBehaviour
         }
     }
 
+    private void StartBite()
+    {
+        if (chaseCoroutine != null)
+        {
+            StopCoroutine(chaseCoroutine);
+            chaseCoroutine = null;
+        }
+    }
+
     private void Drag()
     {
         if (reelTimer == 0)
@@ -210,17 +354,45 @@ public class MawbatMovement : MonoBehaviour
             case MoveState.Chasing:
                 StartChase();
                 break;
+            
+            case MoveState.Striking:
+                StartBite();
+                break;
         }
     }
 
-    void OnDeath()
+    void OnDeath(GameObject hitBy, float damage, Vector2 knockback)
     {
+        SwitchStates((MoveState)(-1));
 
+        float knockbackMult = 6f;
+
+        xVel = knockback.x * knockbackMult;
+        yVel = knockback.y * knockbackMult/4f;
+
+        if (chaseCoroutine != null)
+        {
+            StopCoroutine(chaseCoroutine);
+            chaseCoroutine = null;
+        }
+        if (attackingCoroutine != null)
+        {
+            attackCDTimer = Random.Range(attackCDIntervalMin, attackCDIntervalMax);
+            StopCoroutine(attackingCoroutine);
+            attackingCoroutine = null;
+            readyingAttack = false;
+        }
+
+        dying = true;
     }
 
     void Animations()
     {
-        anim.SetBool("isFlapping", flapIntervalTimer > 0.12f);
+        anim.SetBool("isFlapping", flapIntervalTimer > 0.125f);
+        anim.SetBool("isBiting", myMoveState == 3);
+        anim.SetBool("isHurting", reelTimer > 0 || dying);
+        anim.SetBool("isSleeping", myMoveState == 0);
+
     }
 
     void Timers()
@@ -234,6 +406,11 @@ public class MawbatMovement : MonoBehaviour
             reelTimer -= Time.deltaTime;
         else
             reelTimer = 0;
+
+        if (attackCDTimer > 0)
+            attackCDTimer -= Time.deltaTime;
+        else
+            attackCDTimer = 0;
     }
 
 }
