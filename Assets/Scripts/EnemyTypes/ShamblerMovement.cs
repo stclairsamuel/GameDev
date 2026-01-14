@@ -146,18 +146,18 @@ public class ShamblerMovement : MonoBehaviour
         Animations();
     }
 
-    void OnGetHit(GameObject hitBy, float damage, Vector2 knockback)
+    void OnGetHit(DamageInfo info)
     {
-        reelTimer = reelTime;
+        reelTimer = info.StunTime;
 
-        xVel = knockback.x;
+        xVel = info.Knockback.x;
         
         if (!grounded)
         {
-            xVel = knockback.x * 2f;
-            yVel = knockback.y;
+            xVel = info.Knockback.x * 2f;
+            yVel = info.Knockback.y;
         }
-        
+            
         SwitchStates((MoveState)2);
     }
 
@@ -225,6 +225,7 @@ public class ShamblerMovement : MonoBehaviour
             StopCoroutine(lungeCoroutine);
             lungeCoroutine = null;
             lungeCDTimer = lungeCDTime;
+            lungeStep = 0;
         }
     }
 
@@ -391,7 +392,13 @@ public class ShamblerMovement : MonoBehaviour
         dyingTimer = dyingTime;
         anim.SetBool("isDying", true);
         myMoveState = -1;
-        StopCoroutine(Idle());
+        if (lungeCoroutine != null)
+        {
+            StopCoroutine(lungeCoroutine);
+            lungeCoroutine = null;
+            isLunging = false;
+        }
+
 
         yield return new WaitUntil(() => dyingTimer == 0);
 
@@ -413,7 +420,7 @@ public class ShamblerMovement : MonoBehaviour
         anim.SetBool("isChasing", myMoveState == 2);
         anim.SetBool("isHurt", reelTimer > 0);
         anim.SetBool("isSquating", myMoveState == 3 && lungeStep == 0);
-        anim.SetBool("isLunging", lungeStep == 1);
+        anim.SetBool("isLunging", lungeStep == 1 && myMoveState != 2 && myMoveState != -1);
     }
 
     void Timers()

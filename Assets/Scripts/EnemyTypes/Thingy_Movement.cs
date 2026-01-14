@@ -91,8 +91,9 @@ public class Thingy_Movement : MonoBehaviour
         rb.velocity = new Vector2(xVel, yVel);
     }
 
-    void OnGetHit(GameObject hitBy, float dmg, Vector2 knockback)
+    void OnGetHit(DamageInfo info)
     {
+        /*
         reelTimer = reelTime;
 
         timeStop.RequestFreeze(0.6f);
@@ -101,6 +102,7 @@ public class Thingy_Movement : MonoBehaviour
 
         xVel = knockback.x * knockbackMult.x;
         yVel = knockback.y * knockbackMult.y;
+        */
     }
 
     void WallCheck()

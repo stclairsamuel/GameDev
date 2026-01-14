@@ -57,10 +57,10 @@ public class PunchingBag : MonoBehaviour
         rb.velocity = new Vector2(xVel, yVel);
     }
 
-    private void OnGetHit(GameObject hitBy, float damage, Vector2 knockback)
+    private void OnGetHit(DamageInfo info)
     {
-        xVel = knockback.x * knockbackMult;
-        yVel = knockback.y * knockbackMult;
+        xVel = info.Knockback.x * knockbackMult;
+        yVel = info.Knockback.y * knockbackMult;
     }
 
     bool GroundCheck()

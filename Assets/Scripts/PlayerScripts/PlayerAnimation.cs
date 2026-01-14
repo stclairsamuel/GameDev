@@ -53,28 +53,29 @@ public class PlayerAnimation : MonoBehaviour
 
         if (isFacingRight)
         {
+            transform.localScale = new Vector2(-pTracker.myScale.x, transform.localScale.y);
             if (pTracker.grabbingWall)
             {
-                transform.localScale = new Vector2(pTracker.myScale.x, transform.localScale.y);
+
                 slash.localScale = new Vector2(-1f/pTracker.myScale.x, 1f/transform.localScale.y);
             }
             else
             {
-                transform.localScale = new Vector2(-pTracker.myScale.x, transform.localScale.y);
+
                 slash.localScale = new Vector2(1f/-pTracker.myScale.x, 1f/transform.localScale.y);
             }
         }
         else
         {
+            transform.localScale = new Vector2(pTracker.myScale.x, transform.localScale.y);
             if (pTracker.grabbingWall)
             {
-                transform.localScale = new Vector2(-pTracker.myScale.x, transform.localScale.y);
+
                 slash.localScale = new Vector2(-1f/pTracker.myScale.x, 1f/transform.localScale.y);
 
             }
             else
             {
-                transform.localScale = new Vector2(pTracker.myScale.x, transform.localScale.y);
                 slash.localScale = new Vector2(1f/-pTracker.myScale.x, 1f/transform.localScale.y);
 
             }

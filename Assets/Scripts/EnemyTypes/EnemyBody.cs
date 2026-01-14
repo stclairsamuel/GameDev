@@ -5,7 +5,7 @@ using System;
 
 public class EnemyBody : MonoBehaviour
 {
-    public event Action<GameObject, float, Vector2> OnTakeDamage;
+    public event Action<DamageInfo> OnTakeDamage;
     public event Action<GameObject, float, Vector2> OnDeath;
 
     private Rigidbody2D rb;
@@ -21,6 +21,8 @@ public class EnemyBody : MonoBehaviour
     public float flashTimer;
 
     public ParticleSystem hurtParticles;
+
+
 
     // Start is called before the first frame update
     void Awake()
@@ -41,23 +43,25 @@ public class EnemyBody : MonoBehaviour
         Timers();
     }
 
-    public void GetHit(GameObject hitBy, float damage, Vector2 knockback)
+    public void GetHit(DamageInfo info)
     {
 
         if (currentHealth > 0)
         {
-            currentHealth -= damage;
+            currentHealth -= info.Damage;
             flashTimer = flashTime;
 
-            SummonHurtParticles(Mathf.Sign(knockback.x) * Vector2.right);
+            SummonHurtParticles(Mathf.Sign(info.Knockback.x) * Vector2.right);
 
             if (currentHealth <= 0)
             {
-                Die(hitBy, damage, knockback);
+                Die(info.HitBy, info.Damage, info.Knockback);
                 return;
             }
 
-            OnTakeDamage?.Invoke(hitBy, damage, knockback);
+
+
+            OnTakeDamage?.Invoke(info);
         }
     }
 
@@ -94,4 +98,26 @@ public enum MoveState
     Idling = 1,
     Chasing = 2,
     Striking = 3
+}
+
+public struct DamageInfo
+{
+    public GameObject HitBy;
+    public float Damage;
+    public Vector2 Knockback;
+    public float StunTime;
+
+    public DamageInfo(
+        GameObject hitBy,
+        float damage,
+        Vector2 knockbackDir,
+        float knockbackMagnitude = 1,
+        float stunTime = 0.2f
+        )
+    {
+        HitBy = hitBy;
+        Damage = damage;
+        Knockback = knockbackDir * knockbackMagnitude;
+        StunTime = stunTime;
+    }
 }

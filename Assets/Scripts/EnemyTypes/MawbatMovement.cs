@@ -205,14 +205,14 @@ public class MawbatMovement : MonoBehaviour
         rb.velocity = new Vector2(xVel, yVel);
     }
 
-    void OnGetHit(GameObject hitBy, float dmg, Vector2 knockback)
+    void OnGetHit(DamageInfo info)
     {
         float xKnockbackMult = 2f;
 
-        xVel = knockback.x * xKnockbackMult;
-        yVel = knockback.y;
+        xVel = info.Knockback.x * xKnockbackMult;
+        yVel = info.Knockback.y;
 
-        reelTimer = reelTime;
+        reelTimer = info.StunTime;
 
         if (attackingCoroutine != null)
         {

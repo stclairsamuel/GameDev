@@ -40,7 +40,13 @@ public class PlayerAttack : MonoBehaviour
 
         if (collider.TryGetComponent<EnemyBody>(out EnemyBody hitBody))
         {
-            hitBody.GetHit(gameObject, 10f, new Vector2(knockback.x * pMov.facingDir, knockback.y));
+            DamageInfo info = new DamageInfo(
+                gameObject,
+                10f,
+                new Vector2(knockback.x * pMov.facingDir, knockback.y)
+            );
+
+            hitBody.GetHit(info);
         }
 
         hitObjects.Add(collider);

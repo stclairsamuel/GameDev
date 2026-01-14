@@ -6,6 +6,8 @@ using System;
 public class RoomSpawnManager : MonoBehaviour
 {
     public event Action SpawnWave;
+    public event Action CloseDoors;
+    public event Action OpenDoors;
 
     private bool isActive = false;
     private bool isCleared = false;
@@ -42,17 +44,24 @@ public class RoomSpawnManager : MonoBehaviour
             NewWave();
             SpawnWave?.Invoke();
         }
+        if (currentWave == numWaves && activeEnemies.Count == 0 && isActive)
+        {
+            OpenDoors?.Invoke();
+            isCleared = true;
+        }
     }
 
     void OnTriggerEnter2D(Collider2D collider)
     {
         if (!isCleared)
         {
-            isActive = true;
-
             if (collider.CompareTag("Player"))
             {
+                isActive = true;
+
                 SpawnWave?.Invoke();
+
+                CloseDoors?.Invoke();
             }
         }
     }
