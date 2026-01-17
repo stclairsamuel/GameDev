@@ -10,19 +10,20 @@ public class PlayerMovement2 : MonoBehaviour
 
     public float gravity;
     public float fastFallMult;
+    public float terminalVel;
 
     public float jumpForce;
     public bool isJumping;
 
-    public float acceleration;
+    public float normalAccel;
+    private float accelMod;
+    public float dashAccelMod;
     public float moveSpeed;
 
     public float groundDrag;
     public float groundIdleDrag;
     public float airDrag;
     public float airIdleDrag;
-
-    private bool lockSpeed = true;
 
     public float xVel;
     public float yVel;
@@ -31,17 +32,22 @@ public class PlayerMovement2 : MonoBehaviour
 
     public float dashForce;
 
+    public float savedXVel; 
+
     private bool grounded;
+    private bool touchingWall;
 
     private float xInput;
 
     void OnEnable()
     {
         myTracker.OnGroundTouch += GroundTouch;
+        myTracker.OnWallTouch += WallTouch;
     }
     void OnDisable()
     {
         myTracker.OnGroundTouch -= GroundTouch;
+        myTracker.OnWallTouch -= WallTouch;
     }
 
     void Awake()
@@ -54,6 +60,9 @@ public class PlayerMovement2 : MonoBehaviour
     void Update()
     {
         grounded = myTracker.grounded;
+        touchingWall = myTracker.touchingWall;
+
+        fastFall = yVel < 0;
     }
 
     void FixedUpdate()
@@ -68,28 +77,49 @@ public class PlayerMovement2 : MonoBehaviour
     public void StartJump()
     {
         isJumping = true;
-        yVel = jumpForce;
+        yVel = jumpForce; 
+
+        if (myTracker.canWallJump)
+        {
+            int wallDir = myTracker.lastWallTouched;
+
+            xVel = -wallDir * (Mathf.Abs(xVel) < 20f ? 20f : Mathf.Abs(xVel));
+        }
     }
     public void StopJump()
     {
         isJumping = false;
         yVel *= 0.3f;
-        fastFall = true;
     }
 
     public void StartDash()
     {
-        lockSpeed = false;
         xVel = dashForce * myTracker.facingDir;
+        if (yVel > 0)
+            yVel *= 0.5f;
+        else
+            yVel = 0;
+        accelMod = -normalAccel;
     }
 
     public void Move()
     {
-        if (Mathf.Abs(xVel) < moveSpeed)
-            xVel += acceleration * myTracker.facingDir * Time.fixedDeltaTime;
+        float speedToLock = moveSpeed;
+        bool lockSpeed = myTracker.lockSpeed;
 
-        if (Mathf.Abs(xVel) > moveSpeed && lockSpeed)
-            xVel = Mathf.Clamp(xVel, -moveSpeed, moveSpeed);
+        float acceleration = normalAccel + accelMod;
+
+        if (!lockSpeed)
+        {
+            if (xVel > moveSpeed || xVel < -moveSpeed)
+            {
+                speedToLock = Mathf.Abs(xVel);
+            }
+        }
+
+        xVel = Mathf.Clamp(xVel + acceleration * myTracker.facingDir * Time.fixedDeltaTime, -speedToLock, speedToLock);
+
+
     }
 
     public void Drag()
@@ -98,31 +128,56 @@ public class PlayerMovement2 : MonoBehaviour
 
         float dragToUse = 0;
 
-        if (grounded)
+        float acceleration = normalAccel + accelMod;
+
+        if (!myTracker.isDashing)
         {
-            if (xInput == 0)
-                dragToUse = groundIdleDrag;
-            else if (Mathf.Abs(xVel) > moveSpeed)
-                dragToUse = groundDrag;
+            if (grounded)
+            {
+                if (xInput == 0)
+                    dragToUse = groundIdleDrag;
+                else if (Mathf.Abs(xVel) > moveSpeed)
+                    dragToUse = groundDrag;
+            }
+            else
+            {
+                if (xInput == 0)
+                    dragToUse = airIdleDrag;
+                else if (Mathf.Abs(xVel) > moveSpeed)
+                    dragToUse = airDrag;
+            }
         }
-        else
+
+        if (acceleration != normalAccel && !myTracker.isDashing)
         {
-            if (xInput == 0)
-                dragToUse = airIdleDrag;
-            else if (Mathf.Abs(xVel) > moveSpeed)
-                dragToUse = airDrag;
+            if (grounded)
+                accelMod *= Mathf.Exp(-5f * Time.fixedDeltaTime);
+            else
+                accelMod *= Mathf.Exp(-2f * Time.fixedDeltaTime);
         }
+        if (Mathf.Abs(accelMod) < 0.2f)
+            accelMod = 0;
+
 
         xVel *= Mathf.Exp(-dragToUse * Time.fixedDeltaTime);
     }
 
     void Gravity()
     {
+        xInput = (int)Input.GetAxisRaw("Horizontal");
+
         if (!grounded)
         {
-            yVel -= (fastFall ? gravity * Time.fixedDeltaTime * fastFallMult : gravity * Time.fixedDeltaTime);
+            if (touchingWall && xInput != 0 && yVel <= -2f)
+            {
+                yVel = -2f;
+            }
+            else
+            {
+                yVel = Mathf.Clamp(yVel - (fastFall ? gravity * Time.fixedDeltaTime * fastFallMult : gravity * Time.fixedDeltaTime), -terminalVel, Mathf.Infinity);
+            }
         }
-        else if (grounded && yVel < 0)
+        else if ((grounded || touchingWall) && yVel < 0)
         {
             yVel = -2f;
         }
@@ -132,5 +187,14 @@ public class PlayerMovement2 : MonoBehaviour
     void GroundTouch()
     {
         fastFall = false;
+    }
+
+    void WallTouch()
+    {
+
+    }
+    void WallLeave()
+    {
+
     }
 }

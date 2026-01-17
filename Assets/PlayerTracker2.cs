@@ -21,6 +21,8 @@ public class PlayerTracker2 : MonoBehaviour
 
     public int facingDir;
 
+    public bool lockSpeed;
+
     [Header("Controls")]
     public KeyCode jumpKey = KeyCode.Space;
     public KeyCode dashKey = KeyCode.LeftShift;
@@ -33,8 +35,23 @@ public class PlayerTracker2 : MonoBehaviour
     public float jumpTime;
     float jumpTimer;
 
+    public float jumpBufferTime;
+    float jumpBufferTimer;
+    public float coyoteTime;
+    public float coyoteTimer;
+
+    public float dashJumpTime;
+    float dashJumpTimer;
+    public bool canDashJump;
+
+    [Header("WallStuffs")]
+    public bool touchingWall;
+    public int wallTouched;
+    public int lastWallTouched;
+    public bool canWallJump;
+
     [Header("Dash Stuffs")]
-    bool isDashing;
+    public bool isDashing;
     public float dashTime;
     float dashTimer;
 
@@ -58,7 +75,11 @@ public class PlayerTracker2 : MonoBehaviour
     
     void FixedUpdate()
     {
-
+        if (xInput != 0)
+        {
+            facingDir = (int)xInput;
+            myMov.Move();
+        }
     }
 
     // Update is called once per frame
@@ -70,9 +91,15 @@ public class PlayerTracker2 : MonoBehaviour
         halfHeight = mySize.y / 2f;
         halfWidth = mySize.x / 2f;
 
+
+
         TakeInput();
 
+        lockSpeed = false;
+
         GroundCheck();
+        WallsCheck();
+        TopCheck();
 
         Timers();
     }
@@ -92,44 +119,143 @@ public class PlayerTracker2 : MonoBehaviour
         grounded = Physics2D.Raycast(rayOrigin, Vector2.right, rayLength, ground);
 
         if (wasGrounded && !grounded)
+        {
+            GroundLeave();
             OnGroundLeave?.Invoke();
+        }
         if (!wasGrounded && grounded)
+        {
+            GroundTouch();
             OnGroundTouch?.Invoke();
+        }
     }
 
+    void WallsCheck()
+    {
+        //Variables
 
+        float skinWidth = 0.02f;
+
+        float boxBottom = myPos.y - halfHeight;
+        float boxLeft = myPos.x - halfWidth;
+        float boxRight = myPos.x + halfWidth;
+
+        Vector2 leftOrigin = new Vector2(boxLeft - skinWidth, boxBottom + skinWidth);
+        Vector2 rightOrigin = new Vector2(boxRight + skinWidth, boxBottom + skinWidth);
+
+        float rayLength = mySize.y - (2f * skinWidth);
+
+        bool wasTouchingWall = touchingWall;
+
+        bool touchingLeft = Physics2D.Raycast(leftOrigin, Vector2.up, rayLength, ground);
+        bool touchingRight = Physics2D.Raycast(rightOrigin, Vector2.up, rayLength, ground);
+
+        touchingWall = touchingLeft || touchingRight;
+
+        //Set Wall Touched
+
+        if (touchingWall)
+        {
+            wallTouched = (touchingLeft ? -1 : 1);
+            canWallJump = true;
+        }
+        
+        if (!touchingWall)
+            wallTouched = 0;
+        
+        if (wallTouched != 0)
+            lastWallTouched = wallTouched;
+        
+        if (!touchingWall && coyoteTimer == 0)
+        {
+            canWallJump = false;
+        }
+
+        if (touchingLeft)
+            myMov.xVel = Mathf.Clamp(myMov.xVel, 0, Mathf.Infinity);
+        if (touchingRight)
+            myMov.xVel = Mathf.Clamp(myMov.xVel, -Mathf.Infinity, 0);
+
+        if (touchingWall != wasTouchingWall)
+        {
+            if (touchingWall)
+            {
+                OnWallTouch?.Invoke();
+            }
+            else
+            {
+                WallLeave();
+                OnWallLeave?.Invoke();
+            }
+        }
+    }
+
+    void TopCheck()
+    {
+        float skinWidth = 0.02f;
+
+        float boxTop = myPos.y + halfHeight;
+        float boxLeft = myPos.x - halfWidth;
+
+        Vector2 rayOrigin = new Vector2(boxLeft + skinWidth, boxTop + skinWidth);
+        float rayLength = mySize.x - (2f * skinWidth);
+
+        bool topCheck = Physics2D.Raycast(rayOrigin, Vector2.right, rayLength, ground);
+
+        if (topCheck)
+        {
+            myMov.yVel = Mathf.Clamp(myMov.yVel, -Mathf.Infinity, 0);
+            if (isJumping)
+                StopJump();
+        }
+    }
 
     void TakeInput()
     {
+        canDashJump = dashJumpTimer > 0;
+
         xInput = Input.GetAxisRaw("Horizontal");
 
-        if (xInput != 0)
-        {
-            facingDir = (int)xInput;
-            myMov.Move();
-        }
+        isDashing = dashTimer > 0;
 
-        bool canJump = grounded;
+        bool canJump = grounded || touchingWall || coyoteTimer > 0;
         bool canDash = true;
 
-        if (Input.GetKeyDown(jumpKey) && canJump)
+        if (Input.GetKeyDown(jumpKey))
+        {
+            if (canJump)
+                StartJump();
+            else
+                jumpBufferTimer = jumpBufferTime;
+        }
+        if (jumpBufferTimer > 0 && canJump)
         {
             StartJump();
-
         }
+
         if ((Input.GetKeyUp(jumpKey) || (jumpTimer == 0)) && isJumping)
         {
             StopJump();
         }
+        if (Input.GetKeyUp(jumpKey))
+        {
+            jumpBufferTimer = 0;
+        }
 
         if (Input.GetKeyDown(dashKey))
         {
+            dashTimer = dashTime;
+            dashJumpTimer = dashJumpTime;
             myMov.StartDash();
         }
+
+        if (xInput == -Mathf.Sign(myMov.xVel) && xInput != 0 && isDashing)
+            dashTimer = 0;
     }
 
     void StartJump()
     {
+        jumpBufferTimer = 0;
         isJumping = true;
         myMov.StartJump();
         jumpTimer = jumpTime;
@@ -139,6 +265,21 @@ public class PlayerTracker2 : MonoBehaviour
         isJumping = false;
         myMov.StopJump();
         jumpTimer = 0;
+    }
+
+    void GroundTouch()
+    {
+        
+    }
+    void GroundLeave()
+    {
+        if (!isJumping)
+            coyoteTimer = coyoteTime;
+    }
+    void WallLeave()
+    {
+        if (!isJumping)
+            coyoteTimer = coyoteTime;
     }
 
     void Timers()
@@ -152,5 +293,20 @@ public class PlayerTracker2 : MonoBehaviour
             dashTimer -= Time.deltaTime;
         else
             dashTimer = 0;
+        
+        if (dashJumpTimer > 0)
+            dashJumpTimer -= Time.deltaTime;
+        else
+            dashJumpTimer = 0;
+        
+        if (jumpBufferTimer > 0)
+            jumpBufferTimer -= Time.deltaTime;
+        else
+            jumpBufferTimer = 0;
+
+        if (coyoteTimer > 0)
+            coyoteTimer -= Time.deltaTime;
+        else
+            coyoteTimer = 0;
     }
 }

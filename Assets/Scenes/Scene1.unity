@@ -15109,6 +15109,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5261205345716476904, guid: 06212fd9caab3439ea226df50ed26049, type: 3}
+      propertyPath: m_Size.x
+      value: 0.3
+      objectReference: {fileID: 0}
     - target: {fileID: 6224151690077401475, guid: 06212fd9caab3439ea226df50ed26049, type: 3}
       propertyPath: pMov
       value: 
@@ -15185,12 +15189,23 @@ MonoBehaviour:
     m_Bits: 256
   grounded: 0
   facingDir: 0
+  lockSpeed: 0
   jumpKey: 32
   dashKey: 304
   xInput: 0
   yInput: 0
   jumpTime: 0.5
-  dashTime: 0
+  jumpBufferTime: 1
+  coyoteTime: 0.1
+  coyoteTimer: 0
+  dashJumpTime: 0.8
+  canDashJump: 0
+  touchingWall: 0
+  wallTouched: 0
+  lastWallTouched: 0
+  canWallJump: 0
+  isDashing: 0
+  dashTime: 0.2
   myPos: {x: 0, y: 0}
   xVel: 0
   yVel: 0
@@ -15207,18 +15222,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gravity: 40
-  fastFallMult: 1.5
+  fastFallMult: 2
+  terminalVel: 40
   jumpForce: 20
   isJumping: 0
-  acceleration: 24
+  normalAccel: 160
+  dashAccelMod: 0
   moveSpeed: 12
-  groundDrag: 10
+  groundDrag: 5
   groundIdleDrag: 15
-  airDrag: 1.1
-  airIdleDrag: 5
+  airDrag: 1
+  airIdleDrag: 2
   xVel: 0
   yVel: 0
-  dashForce: 30
+  dashForce: 24
+  savedXVel: 0
 --- !u!1001 &6285344852124448810
 PrefabInstance:
   m_ObjectHideFlags: 0
