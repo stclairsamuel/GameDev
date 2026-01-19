@@ -32,7 +32,7 @@ public class PlayerMovement2 : MonoBehaviour
 
     public float dashForce;
 
-    public float savedXVel; 
+    public float savedXVel;
 
     private bool grounded;
     private bool touchingWall;
@@ -71,6 +71,12 @@ public class PlayerMovement2 : MonoBehaviour
 
         Drag();
 
+        if (myTracker.superWallJumpTimer > 0 && xInput == -myTracker.lastWallTouched)
+        {
+            xVel = -myTracker.lastWallTouched * (Mathf.Abs(myTracker.savedXVel));
+            myTracker.superWallJumpTimer = 0;
+        }
+
         rb.velocity = new Vector2(xVel, yVel);
     }
 
@@ -83,7 +89,15 @@ public class PlayerMovement2 : MonoBehaviour
         {
             int wallDir = myTracker.lastWallTouched;
 
-            xVel = -wallDir * (Mathf.Abs(xVel) < 20f ? 20f : Mathf.Abs(xVel));
+            bool superWallJump = myTracker.superWallJumpTimer > 0;
+
+            if (xInput == -wallDir && superWallJump)
+            {
+                xVel = -wallDir * (Mathf.Abs(myTracker.savedXVel));
+                myTracker.superWallJumpTimer = 0;
+            }
+            else
+                xVel = -wallDir * moveSpeed;
         }
     }
     public void StopJump()
@@ -124,13 +138,15 @@ public class PlayerMovement2 : MonoBehaviour
 
     public void Drag()
     {
+        bool keepLandingSpeed = myTracker.landingSpeedTimer > 0;
+
         int xInput = (int)Input.GetAxisRaw("Horizontal");
 
         float dragToUse = 0;
 
         float acceleration = normalAccel + accelMod;
 
-        if (!myTracker.isDashing)
+        if (!myTracker.isDashing && !keepLandingSpeed)
         {
             if (grounded)
             {
@@ -168,9 +184,12 @@ public class PlayerMovement2 : MonoBehaviour
 
         if (!grounded)
         {
-            if (touchingWall && xInput != 0 && yVel <= -2f)
+            if (touchingWall && xInput == myTracker.lastWallTouched && yVel <= -2f)
             {
-                yVel = -2f;
+                float wallDrag = -7f;
+                yVel *= Mathf.Exp(wallDrag * Time.fixedDeltaTime);
+                if (yVel > -2f)
+                    yVel = -2f;
             }
             else
             {

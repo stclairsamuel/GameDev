@@ -44,11 +44,19 @@ public class PlayerTracker2 : MonoBehaviour
     float dashJumpTimer;
     public bool canDashJump;
 
+    public float landingSpeedTime;
+    public float landingSpeedTimer;
+
     [Header("WallStuffs")]
     public bool touchingWall;
     public int wallTouched;
     public int lastWallTouched;
     public bool canWallJump;
+
+    public bool canDashWallJump;
+
+    public float superWallJumpTime;
+    public float superWallJumpTimer;
 
     [Header("Dash Stuffs")]
     public bool isDashing;
@@ -61,7 +69,7 @@ public class PlayerTracker2 : MonoBehaviour
     float halfHeight;
     float halfWidth;
 
-    public float xVel, yVel;
+    public float savedXVel;
 
     // Start is called before the first frame update
     void Awake()
@@ -171,15 +179,13 @@ public class PlayerTracker2 : MonoBehaviour
             canWallJump = false;
         }
 
-        if (touchingLeft)
-            myMov.xVel = Mathf.Clamp(myMov.xVel, 0, Mathf.Infinity);
-        if (touchingRight)
-            myMov.xVel = Mathf.Clamp(myMov.xVel, -Mathf.Infinity, 0);
+
 
         if (touchingWall != wasTouchingWall)
         {
             if (touchingWall)
             {
+                WallTouch();
                 OnWallTouch?.Invoke();
             }
             else
@@ -188,6 +194,10 @@ public class PlayerTracker2 : MonoBehaviour
                 OnWallLeave?.Invoke();
             }
         }
+        if (touchingLeft)
+            myMov.xVel = Mathf.Clamp(myMov.xVel, 0, Mathf.Infinity);
+        if (touchingRight)
+            myMov.xVel = Mathf.Clamp(myMov.xVel, -Mathf.Infinity, 0);
     }
 
     void TopCheck()
@@ -269,16 +279,40 @@ public class PlayerTracker2 : MonoBehaviour
 
     void GroundTouch()
     {
-        
+        if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
+        {
+            landingSpeedTimer = landingSpeedTime;
+        }
+        if (superWallJumpTimer > 0)
+            superWallJumpTimer = 0;
     }
     void GroundLeave()
     {
         if (!isJumping)
             coyoteTimer = coyoteTime;
     }
+    void WallTouch()
+    {
+        if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
+        {
+            savedXVel = myMov.xVel;
+            superWallJumpTimer = superWallJumpTime;
+        }
+        else
+            superWallJumpTimer = 0;
+    }
     void WallLeave()
     {
-        if (!isJumping)
+        if (isJumping)
+        {
+            if (superWallJumpTimer > 0)
+            {
+                float arbitraryLeeway = 0.1f;
+                superWallJumpTimer = arbitraryLeeway;
+            }
+        }
+
+        else
             coyoteTimer = coyoteTime;
     }
 
@@ -308,5 +342,15 @@ public class PlayerTracker2 : MonoBehaviour
             coyoteTimer -= Time.deltaTime;
         else
             coyoteTimer = 0;
+
+        if (landingSpeedTimer > 0)
+            landingSpeedTimer -= Time.deltaTime;
+        else
+            landingSpeedTimer = 0;
+
+        if (superWallJumpTimer > 0)
+            superWallJumpTimer -= Time.deltaTime;
+        else
+            superWallJumpTimer = 0;
     }
 }

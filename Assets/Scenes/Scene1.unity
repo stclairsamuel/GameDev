@@ -15194,21 +15194,25 @@ MonoBehaviour:
   dashKey: 304
   xInput: 0
   yInput: 0
-  jumpTime: 0.5
+  jumpTime: 0.3
   jumpBufferTime: 1
   coyoteTime: 0.1
   coyoteTimer: 0
   dashJumpTime: 0.8
   canDashJump: 0
+  landingSpeedTime: 0.2
+  landingSpeedTimer: 0
   touchingWall: 0
   wallTouched: 0
   lastWallTouched: 0
   canWallJump: 0
+  canDashWallJump: 0
+  superWallJumpTime: 1
+  superWallJumpTimer: 0
   isDashing: 0
   dashTime: 0.2
   myPos: {x: 0, y: 0}
-  xVel: 0
-  yVel: 0
+  savedXVel: 0
 --- !u!114 &3249027741345838359
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15221,9 +15225,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3cbf79a2dc7af4856abea4b7ffcbbb5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gravity: 40
+  gravity: 30
   fastFallMult: 2
-  terminalVel: 40
+  terminalVel: 35
   jumpForce: 20
   isJumping: 0
   normalAccel: 160
@@ -15231,7 +15235,7 @@ MonoBehaviour:
   moveSpeed: 12
   groundDrag: 5
   groundIdleDrag: 15
-  airDrag: 1
+  airDrag: 0.5
   airIdleDrag: 2
   xVel: 0
   yVel: 0
