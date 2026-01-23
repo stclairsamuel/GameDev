@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerAttack : MonoBehaviour
+public class PlayerAttackLegacy : MonoBehaviour
 {
+    /*
     public PlayerMovement pMov;
     public PlayerTracker pTracker;
     public PlayerAnimation pAnim;
@@ -51,4 +52,5 @@ public class PlayerAttack : MonoBehaviour
 
         hitObjects.Add(collider);
     }
+    */
 }

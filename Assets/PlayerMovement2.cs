@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class PlayerMovement2 : MonoBehaviour
 {
-    private PlayerTracker2 myTracker;
+    private PlayerTracker myTracker;
 
     private Rigidbody2D rb;
 
@@ -52,7 +52,7 @@ public class PlayerMovement2 : MonoBehaviour
 
     void Awake()
     {
-        myTracker = GetComponent<PlayerTracker2>();
+        myTracker = GetComponent<PlayerTracker>();
 
         rb = GetComponent<Rigidbody2D>();
     }
@@ -71,7 +71,7 @@ public class PlayerMovement2 : MonoBehaviour
 
         Drag();
 
-        if (myTracker.superWallJumpTimer > 0 && xInput == -myTracker.lastWallTouched)
+        if (myTracker.superWallJumpTimer > 0 && xInput == -myTracker.lastWallTouched && myTracker.isJumping)
         {
             xVel = -myTracker.lastWallTouched * (Mathf.Abs(myTracker.savedXVel));
             myTracker.superWallJumpTimer = 0;
@@ -133,6 +133,30 @@ public class PlayerMovement2 : MonoBehaviour
 
         xVel = Mathf.Clamp(xVel + acceleration * myTracker.facingDir * Time.fixedDeltaTime, -speedToLock, speedToLock);
 
+        CheckPos();
+    }
+
+    public void CheckPos()
+    {
+        Vector2 myPos = myTracker.myPos;
+        int facingDir = myTracker.facingDir;
+
+        float halfWidth = myTracker.halfWidth;
+        float halfHeight = myTracker.halfHeight;
+
+        float skinWidth = 0.02f;
+        Vector2 topRayOrigin = new Vector2(myPos.x + (facingDir * (halfWidth + skinWidth)), myPos.y + (halfHeight / 2f));
+
+        float rayLength = (halfHeight / 2f);
+
+        RaycastHit2D topCheckUp = Physics2D.Raycast(topRayOrigin, Vector2.up, rayLength, myTracker.ground);
+        RaycastHit2D topCheckIn = Physics2D.Raycast(topRayOrigin, Vector2.left * facingDir, skinWidth, myTracker.ground);
+
+        if (topCheckUp && !topCheckIn)
+        {
+            Vector2 correctedPos = myPos - new Vector2(0, (rayLength - topCheckUp.distance) + skinWidth);
+            transform.position = correctedPos;
+        }
 
     }
 

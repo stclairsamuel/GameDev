@@ -42,6 +42,8 @@ public class Hazards : MonoBehaviour
 
     void ApplyHazard(HazardTile tile)
     {
-        pTracker.Damage(gameObject, tile.damage, tile.hitDirection * tile.knockback, 0, 0.2f);
+        DamageInfo info = new DamageInfo(gameObject, tile.damage, tile.hitDirection, tile.knockback, 0.2f);
+
+        pTracker.Damage(info);
     }
 }

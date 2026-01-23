@@ -4,8 +4,9 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System;
 
-public class PlayerTracker : MonoBehaviour
+public class PlayerTrackerLegacy : MonoBehaviour
 {
+/*
     public event Action OnPlayerDamaged;
 
     public event Action OnGroundContact;
@@ -410,4 +411,5 @@ public class PlayerTracker : MonoBehaviour
             pMov.lockSpeedTimer = pMov.lockSpeedTime;
         }
     }
+    */
 }

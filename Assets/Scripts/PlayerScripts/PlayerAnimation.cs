@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerAnimation : MonoBehaviour
+public class PlayerAnimationLegacy : MonoBehaviour
 {
+    /*
     public Animator playerAnim;
     public Animator attackAnim;
 
@@ -100,4 +101,5 @@ public class PlayerAnimation : MonoBehaviour
         if (attackTimer > 0) { attackTimer -= Time.deltaTime; }
         else { attackTimer = 0; }
     }
+    */
 }

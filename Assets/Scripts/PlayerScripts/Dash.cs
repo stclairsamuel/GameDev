@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Dash : MonoBehaviour
+public class DashLegacy : MonoBehaviour
 {
+    /*
     public float dashForce;
     public float dashTime;
     public float dashTimer;
@@ -68,5 +69,5 @@ public class Dash : MonoBehaviour
         else { dashCooldownTimer = 0; }
         if (dashTimer > 0) { dashTimer -= Time.deltaTime; }
         else { dashTimer = 0; }
-    }
+    */
 }

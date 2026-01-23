@@ -3,18 +3,24 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
-public class PlayerTracker2 : MonoBehaviour
+public class PlayerTracker : MonoBehaviour
 {
     public event Action OnGroundTouch;
     public event Action OnGroundLeave;
     public event Action OnWallTouch;
     public event Action OnWallLeave;
 
+    public event Action Attack;
+
+    public event Action Jump;
+    public event Action Dash;
+
     private Rigidbody2D rb;
     private Collider2D col;
 
     private PlayerMovement2 myMov;
     private PlayerDash2 myDash;
+    private PlayerAttack myAttack;
 
     public LayerMask ground;
     public bool grounded;
@@ -31,7 +37,7 @@ public class PlayerTracker2 : MonoBehaviour
     public float yInput;
 
     [Header("Jump Stuffs")]
-    bool isJumping;
+    public bool isJumping;
     public float jumpTime;
     float jumpTimer;
 
@@ -66,10 +72,19 @@ public class PlayerTracker2 : MonoBehaviour
     public Vector2 myPos;
     private Vector2 mySize;
 
-    float halfHeight;
-    float halfWidth;
+    public float halfHeight;
+    public float halfWidth;
 
     public float savedXVel;
+
+    void OnEnable()
+    {
+        myAttack.successfulHit += HitEnemy;
+    }
+    void OnDisable()
+    {
+        myAttack.successfulHit -= HitEnemy;
+    }
 
     // Start is called before the first frame update
     void Awake()
@@ -79,6 +94,9 @@ public class PlayerTracker2 : MonoBehaviour
 
         myMov = GetComponent<PlayerMovement2>();
         myDash = GetComponent<PlayerDash2>();
+        myAttack = GetComponentInChildren<PlayerAttack>();
+
+        facingDir = 1;
     }
     
     void FixedUpdate()
@@ -259,6 +277,11 @@ public class PlayerTracker2 : MonoBehaviour
             myMov.StartDash();
         }
 
+        if (Input.GetMouseButtonDown(0))
+        {
+            Attack?.Invoke();
+        }
+
         if (xInput == -Mathf.Sign(myMov.xVel) && xInput != 0 && isDashing)
             dashTimer = 0;
     }
@@ -268,6 +291,7 @@ public class PlayerTracker2 : MonoBehaviour
         jumpBufferTimer = 0;
         isJumping = true;
         myMov.StartJump();
+        Jump?.Invoke();
         jumpTimer = jumpTime;
     }
     void StopJump()
@@ -314,6 +338,17 @@ public class PlayerTracker2 : MonoBehaviour
 
         else
             coyoteTimer = coyoteTime;
+    }
+
+    public void Damage(DamageInfo info)
+    {
+
+    }
+
+    public void HitEnemy()
+    {
+        myMov.xVel = Mathf.Clamp(myMov.xVel - facingDir * 8f, -facingDir * 8f, facingDir * 8f);
+        //landingSpeedTimer = landingSpeedTime;
     }
 
     void Timers()

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class PlayerDash2 : MonoBehaviour
 {
-    private PlayerTracker2 myTracker;
+    private PlayerTracker myTracker;
 
     public float dashForce;
 
@@ -15,7 +15,7 @@ public class PlayerDash2 : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
-        myTracker = GetComponent<PlayerTracker2>();
+        myTracker = GetComponent<PlayerTracker>();
     }
 
     // Update is called once per frame
@@ -26,6 +26,6 @@ public class PlayerDash2 : MonoBehaviour
 
     public void StartDash()
     {
-        
+
     }
 }

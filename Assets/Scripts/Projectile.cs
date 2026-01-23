@@ -99,7 +99,8 @@ public class Projectile : MonoBehaviour
     {
         if (contact.CompareTag("Player"))
         {
-            player.Damage(gameObject, 1f, new Vector2(Mathf.Sign(xVel) * 5f, 5f));
+            DamageInfo info = new DamageInfo(gameObject, 1f, new Vector2(Mathf.Sign(xVel) * 5f, 5f));
+            player.Damage(info);
 
             Destroy(gameObject);
         }

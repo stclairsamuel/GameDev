@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerHealthBar : MonoBehaviour
+public class PlayerHealthBarLegacy : MonoBehaviour
 {
+    /*
     public GameObject heartPrefab;
     private PlayerTracker pTracker;
 
@@ -75,4 +76,5 @@ public class PlayerHealthBar : MonoBehaviour
     {
         
     }
+    */
 }

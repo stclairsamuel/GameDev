@@ -43,7 +43,9 @@ public class ShamblerAttack : MonoBehaviour
     {
         if (other.TryGetComponent<PlayerTracker>(out PlayerTracker pTracker))
         {
-            pTracker.Damage(gameObject, 2f, new Vector2(myMov.facingDir * knockback.x, knockback.y), 0.1f);
+            DamageInfo info = new DamageInfo(gameObject, 2f, new Vector2(myMov.facingDir * knockback.x, knockback.y), 1f, 0.1f);
+
+            pTracker.Damage(info);
         }
     }
 
