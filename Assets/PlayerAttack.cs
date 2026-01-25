@@ -6,9 +6,9 @@ using System;
 public class PlayerAttack : MonoBehaviour
 {
     private SpriteRenderer rend;
-    private Animator anim;
     private PlayerTracker myTracker;
-    private Collider2D col;
+
+    public List<GameObject> attacks;
 
     public event Action successfulHit;
 
@@ -24,7 +24,7 @@ public class PlayerAttack : MonoBehaviour
 
     bool isAttacking = false;
 
-    int attackStep = 0;
+    public int attackStep = 0;
 
     private List<Collider2D> hitObjects;
 
@@ -41,8 +41,6 @@ public class PlayerAttack : MonoBehaviour
     void Awake()
     {
         rend = GetComponent<SpriteRenderer>();
-        anim = GetComponent<Animator>();
-        col = GetComponent<Collider2D>();
 
         myTracker = GetComponentInParent<PlayerTracker>();
     }
@@ -58,11 +56,6 @@ public class PlayerAttack : MonoBehaviour
         if (resetTimer == 0)
         {
             attackStep = 0;
-        }
-
-        if (attackCDTimer == 0)
-        {
-            col.enabled = false;
         }
             
 
@@ -84,17 +77,23 @@ public class PlayerAttack : MonoBehaviour
 
     void StartAttack()
     {
-        col.enabled = false;
-        col.enabled = true;
         hitObjects = new List<Collider2D>();
         resetTimer = resetTime + attackCDTime;
         attackCDTimer = attackCDTime;
-        if (attackStep < 3)
+
+        GameObject newSlice = Instantiate(attacks[attackStep]);
+        PlayerSliceAnim sliceScript = newSlice.GetComponent<PlayerSliceAnim>();
+        sliceScript.attackController = gameObject.GetComponent<PlayerAttack>();
+
+        if (attackStep < attacks.Count - 1)
             attackStep += 1;
         else
-            attackStep = 1;
-        anim.SetInteger("attackStep", attackStep);
-        anim.SetTrigger("Attack");
+            attackStep = 0;
+    }
+
+    public void SuccessfulHit()
+    {
+        
     }
 
     void Timers()
@@ -115,18 +114,4 @@ public class PlayerAttack : MonoBehaviour
             resetTimer = 0;
     }
 
-    void OnTriggerEnter2D(Collider2D objectHit)
-    {
-        if (objectHit.TryGetComponent<EnemyBody>(out EnemyBody target))
-        {
-            if (!hitObjects.Contains(objectHit))
-            {
-                Vector2 knockBackDir = new Vector2(myTracker.facingDir, 1);
-                DamageInfo info = new DamageInfo(gameObject, damage, knockBackDir, knockback);
-                target.GetHit(info);
-                hitObjects.Add(objectHit);
-                successfulHit?.Invoke();
-            }
-        }
-    }
 }
