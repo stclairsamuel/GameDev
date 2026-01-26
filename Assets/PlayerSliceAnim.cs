@@ -25,7 +25,7 @@ public class PlayerSliceAnim : MonoBehaviour
 
         hitObjects = new List<Collider2D>();
 
-        //transform.position = player.transform.position + new Vector3(0.5f * myFacingDir, 0.1f, 0);
+        transform.position = player.transform.position + new Vector3(0.5f * myFacingDir, 0.1f, 0);
     }
 
     // Start is called before the first frame update
@@ -40,7 +40,7 @@ public class PlayerSliceAnim : MonoBehaviour
     }
 
     // Update is called once per frame
-    void FixedUpdate()
+    void Update()
     {
         transform.position = player.transform.position + new Vector3(0.5f * myFacingDir, 0.1f, 0);
     }
@@ -51,8 +51,6 @@ public class PlayerSliceAnim : MonoBehaviour
         {
             if (!hitObjects.Contains(objectHit))
             {
-                Debug.Log("hit");
-
                 Vector2 knockBackDir = new Vector2(myFacingDir, 1);
                 DamageInfo info = new DamageInfo(gameObject, attackController.damage, knockBackDir, attackController.knockback);
                 target.GetHit(info);

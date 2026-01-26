@@ -347,7 +347,7 @@ public class PlayerTracker : MonoBehaviour
 
     public void HitEnemy()
     {
-        myMov.xVel = Mathf.Clamp(myMov.xVel - facingDir * 8f, -facingDir * 8f, facingDir * 8f);
+        myMov.xVel = Mathf.Clamp(myMov.xVel - (facingDir * 8f), -facingDir * 8f, facingDir * 8f);
         //landingSpeedTimer = landingSpeedTime;
     }
 

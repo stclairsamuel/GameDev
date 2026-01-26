@@ -93,7 +93,7 @@ public class PlayerAttack : MonoBehaviour
 
     public void SuccessfulHit()
     {
-        
+        successfulHit?.Invoke();
     }
 
     void Timers()
