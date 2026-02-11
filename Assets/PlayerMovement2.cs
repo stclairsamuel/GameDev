@@ -16,7 +16,7 @@ public class PlayerMovement2 : MonoBehaviour
     public bool isJumping;
 
     public float normalAccel;
-    private float accelMod;
+    public float accelMod;
     public float dashAccelMod;
     public float moveSpeed;
 

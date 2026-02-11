@@ -22,6 +22,8 @@ public class PlayerTracker : MonoBehaviour
     private PlayerDash2 myDash;
     private PlayerAttack myAttack;
 
+    private TimeStop tS;
+
     public LayerMask ground;
     public bool grounded;
 
@@ -77,6 +79,8 @@ public class PlayerTracker : MonoBehaviour
 
     public float savedXVel;
 
+    public float hitStop;
+
     void OnEnable()
     {
         myAttack.successfulHit += HitEnemy;
@@ -95,6 +99,8 @@ public class PlayerTracker : MonoBehaviour
         myMov = GetComponent<PlayerMovement2>();
         myDash = GetComponent<PlayerDash2>();
         myAttack = GetComponentInChildren<PlayerAttack>();
+
+        tS = GameObject.FindWithTag("TimeStop").GetComponent<TimeStop>();
 
         facingDir = 1;
     }
@@ -342,12 +348,30 @@ public class PlayerTracker : MonoBehaviour
 
     public void Damage(DamageInfo info)
     {
-
+        
     }
 
     public void HitEnemy()
     {
-        myMov.xVel = Mathf.Clamp(myMov.xVel - (facingDir * 8f), -facingDir * 8f, facingDir * 8f);
+        if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
+        {
+            myMov.yVel = 14f;
+        }
+
+        
+
+        if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
+        {
+            myMov.xVel = facingDir * -6f;
+            myMov.accelMod = -160f;
+        }
+        else
+        {
+            myMov.xVel = facingDir * -8f;
+        }
+
+        tS.RequestFreeze(hitStop);
+
         //landingSpeedTimer = landingSpeedTime;
     }
 

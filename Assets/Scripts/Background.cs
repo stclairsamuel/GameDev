@@ -7,6 +7,8 @@ public class Background : MonoBehaviour
     public float layer;
     public Transform player;
 
+    public float yOffset;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -16,6 +18,6 @@ public class Background : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        transform.position = new Vector2(player.position.x * (1f/layer), transform.position.y);
+        transform.position = new Vector2(player.position.x * (1f/layer), player.position.y * (1f/Mathf.Pow(layer, 2)) + yOffset);
     }
 }

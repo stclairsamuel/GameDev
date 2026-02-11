@@ -32,7 +32,7 @@ public class PlayerSliceAnim : MonoBehaviour
     void Start()
     {
         myFacingDir = myTracker.facingDir;
-        transform.localScale = new Vector2(myFacingDir, 1);
+        transform.localScale = new Vector2(myFacingDir * 1.5f, 1f);
 
         
 
