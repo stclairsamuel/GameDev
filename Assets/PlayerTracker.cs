@@ -15,6 +15,11 @@ public class PlayerTracker : MonoBehaviour
     public event Action Jump;
     public event Action Dash;
 
+    public float maxHealth;
+    private float currentHealth;
+
+    public float stunTimer;
+
     private Rigidbody2D rb;
     private Collider2D col;
 
@@ -103,6 +108,8 @@ public class PlayerTracker : MonoBehaviour
         tS = GameObject.FindWithTag("TimeStop").GetComponent<TimeStop>();
 
         facingDir = 1;
+
+        currentHealth = maxHealth;
     }
     
     void FixedUpdate()
@@ -122,8 +129,6 @@ public class PlayerTracker : MonoBehaviour
 
         halfHeight = mySize.y / 2f;
         halfWidth = mySize.x / 2f;
-
-
 
         TakeInput();
 
@@ -248,12 +253,17 @@ public class PlayerTracker : MonoBehaviour
     {
         canDashJump = dashJumpTimer > 0;
 
-        xInput = Input.GetAxisRaw("Horizontal");
+        if (stunTimer == 0)
+            xInput = Input.GetAxisRaw("Horizontal");
+        else
+        {
+            xInput = 0;
+            return;
+        }
 
         isDashing = dashTimer > 0;
 
         bool canJump = grounded || touchingWall || coyoteTimer > 0;
-        bool canDash = true;
 
         if (Input.GetKeyDown(jumpKey))
         {
@@ -348,7 +358,14 @@ public class PlayerTracker : MonoBehaviour
 
     public void Damage(DamageInfo info)
     {
-        
+        float freezeTime = 0.2f;
+        tS.RequestFreeze(freezeTime);
+
+        currentHealth -= info.Damage;
+        myMov.xVel = info.Knockback.x;
+        myMov.yVel = info.Knockback.y;
+
+        stunTimer = info.StunTime;
     }
 
     public void HitEnemy()
@@ -411,5 +428,10 @@ public class PlayerTracker : MonoBehaviour
             superWallJumpTimer -= Time.deltaTime;
         else
             superWallJumpTimer = 0;
+        
+        if (stunTimer > 0)
+            stunTimer -= Time.deltaTime;
+        else
+            stunTimer = 0;
     }
 }
