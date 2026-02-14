@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using UnityEngine.SceneManagement;
 
 public class PlayerTracker : MonoBehaviour
 {
@@ -16,7 +17,12 @@ public class PlayerTracker : MonoBehaviour
     public event Action Dash;
 
     public float maxHealth;
-    private float currentHealth;
+    public float currentHealth;
+
+    public float maxStamina;
+    public float currentStamina;
+    public float staminaRecoveryRate;
+    public float dashStamina;
 
     public float stunTimer;
 
@@ -110,6 +116,7 @@ public class PlayerTracker : MonoBehaviour
         facingDir = 1;
 
         currentHealth = maxHealth;
+        currentStamina = maxStamina;
     }
     
     void FixedUpdate()
@@ -139,6 +146,21 @@ public class PlayerTracker : MonoBehaviour
         TopCheck();
 
         Timers();
+
+        if (currentHealth <= 0)
+        {
+            SceneManager.LoadScene("DeathScreen");
+        }
+
+        if (currentStamina < maxStamina)
+        {
+            currentStamina += Time.deltaTime * staminaRecoveryRate;
+        }
+        else
+        {
+            currentStamina = maxStamina;
+        }
+
     }
 
     void GroundCheck()
@@ -286,10 +308,11 @@ public class PlayerTracker : MonoBehaviour
             jumpBufferTimer = 0;
         }
 
-        if (Input.GetKeyDown(dashKey))
+        if (Input.GetKeyDown(dashKey) && currentStamina > dashStamina)
         {
             dashTimer = dashTime;
             dashJumpTimer = dashJumpTime;
+            currentStamina -= dashStamina;
             myMov.StartDash();
         }
 
