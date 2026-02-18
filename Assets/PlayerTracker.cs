@@ -3,9 +3,27 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 
 public class PlayerTracker : MonoBehaviour
 {
+    public InputActionAsset InputActions;
+
+    public InputActionMap playerActions;
+    public InputActionMap uiActions;
+
+    private InputAction m_jumpAction;
+    private InputAction m_attackAction;
+    private InputAction m_moveAction;
+    private InputAction m_dashAction;
+    private InputAction m_throwAction;
+    private InputAction m_pause;
+    private InputAction m_continue;
+
+    public GameObject pauseFilter;
+
+    private Vector2 m_moveAmt;
+
     public event Action OnGroundTouch;
     public event Action OnGroundLeave;
     public event Action OnWallTouch;
@@ -32,6 +50,7 @@ public class PlayerTracker : MonoBehaviour
     private PlayerMovement2 myMov;
     private PlayerDash2 myDash;
     private PlayerAttack myAttack;
+    private ThrowMyItem throwScript;
 
     private TimeStop tS;
 
@@ -48,6 +67,15 @@ public class PlayerTracker : MonoBehaviour
 
     public float xInput;
     public float yInput;
+
+    [Header("Throw Stuffs")]
+    public float throwTime;
+    public float throwTimer;
+    public float throwAirStall;
+    bool holdingThrow;
+    Vector2 throwDir;
+    bool isThrowing;
+    
 
     [Header("Jump Stuffs")]
     public bool isJumping;
@@ -95,21 +123,38 @@ public class PlayerTracker : MonoBehaviour
     void OnEnable()
     {
         myAttack.successfulHit += HitEnemy;
+
+        InputActions.FindActionMap("Player").Enable();
+        InputActions.FindActionMap("UI").Disable();
     }
     void OnDisable()
     {
         myAttack.successfulHit -= HitEnemy;
+
+        InputActions.FindActionMap("Player").Disable();
     }
 
     // Start is called before the first frame update
     void Awake()
     {
+        playerActions = InputActions.FindActionMap("Player");
+        uiActions = InputActions.FindActionMap("UI");
+
+        m_jumpAction = InputActions.FindAction("Jump");
+        m_attackAction = InputActions.FindAction("Attack");
+        m_dashAction = InputActions.FindAction("Dash");
+        m_moveAction = InputActions.FindAction("Move");
+        m_throwAction = InputActions.FindAction("Throw");
+        m_pause = InputActions.FindAction("Pause");
+        m_continue = InputActions.FindAction("Continue");
+ 
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
 
         myMov = GetComponent<PlayerMovement2>();
         myDash = GetComponent<PlayerDash2>();
         myAttack = GetComponentInChildren<PlayerAttack>();
+        throwScript = GetComponent<ThrowMyItem>();
 
         tS = GameObject.FindWithTag("TimeStop").GetComponent<TimeStop>();
 
@@ -117,6 +162,11 @@ public class PlayerTracker : MonoBehaviour
 
         currentHealth = maxHealth;
         currentStamina = maxStamina;
+    }
+
+    void Start()
+    {
+        pauseFilter.SetActive(false);
     }
     
     void FixedUpdate()
@@ -160,6 +210,8 @@ public class PlayerTracker : MonoBehaviour
         {
             currentStamina = maxStamina;
         }
+
+        myMov.useThrowDrag = isThrowing || holdingThrow;
 
     }
 
@@ -273,10 +325,31 @@ public class PlayerTracker : MonoBehaviour
 
     void TakeInput()
     {
+        if (m_pause.WasPerformedThisFrame())
+        {
+            Time.timeScale = 0;
+            pauseFilter.SetActive(true);
+            InputActions.FindActionMap("Player").Disable();
+            InputActions.FindActionMap("UI").Enable();
+        }
+        if (m_continue.WasPerformedThisFrame())
+        {
+            Time.timeScale = 1;
+            pauseFilter.SetActive(false);
+            InputActions.FindActionMap("Player").Enable();
+            InputActions.FindActionMap("UI").Disable();
+        }
+
+        m_moveAmt = m_moveAction.ReadValue<Vector2>();
+        if (m_moveAmt.x != 0) m_moveAmt.x = Mathf.Sign(m_moveAmt.x);
+
         canDashJump = dashJumpTimer > 0;
 
         if (stunTimer == 0)
-            xInput = Input.GetAxisRaw("Horizontal");
+        {
+            //xInput = Input.GetAxisRaw("Horizontal");
+            xInput = m_moveAmt.x;
+        }
         else
         {
             xInput = 0;
@@ -287,7 +360,7 @@ public class PlayerTracker : MonoBehaviour
 
         bool canJump = grounded || touchingWall || coyoteTimer > 0;
 
-        if (Input.GetKeyDown(jumpKey))
+        if (m_jumpAction.WasPerformedThisFrame())
         {
             if (canJump)
                 StartJump();
@@ -299,16 +372,16 @@ public class PlayerTracker : MonoBehaviour
             StartJump();
         }
 
-        if ((Input.GetKeyUp(jumpKey) || (jumpTimer == 0)) && isJumping)
+        if ((m_jumpAction.WasReleasedThisFrame()  || (jumpTimer == 0)) && isJumping)
         {
             StopJump();
         }
-        if (Input.GetKeyUp(jumpKey))
+        if (m_jumpAction.WasReleasedThisFrame())
         {
             jumpBufferTimer = 0;
         }
 
-        if (Input.GetKeyDown(dashKey) && currentStamina > dashStamina)
+        if (m_dashAction.WasPerformedThisFrame() && currentStamina > dashStamina)
         {
             dashTimer = dashTime;
             dashJumpTimer = dashJumpTime;
@@ -316,13 +389,45 @@ public class PlayerTracker : MonoBehaviour
             myMov.StartDash();
         }
 
-        if (Input.GetMouseButtonDown(0))
+        if (m_attackAction.WasPerformedThisFrame())
         {
             Attack?.Invoke();
         }
 
+        if (m_throwAction.WasPerformedThisFrame())
+        {
+            StartThrow();
+        }
+
+        if (m_throwAction.WasReleasedThisFrame())
+        {
+            InitThrow();
+        }
+
+        if (throwTimer == 0 && isThrowing)
+        {
+            throwScript.ThrowItem();
+            isThrowing = false;
+            m_moveAction.Enable();
+            m_dashAction.Enable();
+        }
+
         if (xInput == -Mathf.Sign(myMov.xVel) && xInput != 0 && isDashing)
             dashTimer = 0;
+    }
+
+    void StartThrow()
+    {
+        holdingThrow = true;
+
+        m_moveAction.Disable();
+        m_dashAction.Disable();
+    }
+    void InitThrow()
+    {
+        holdingThrow = false;
+        throwTimer = throwTime;
+        isThrowing = true;
     }
 
     void StartJump()
@@ -456,5 +561,10 @@ public class PlayerTracker : MonoBehaviour
             stunTimer -= Time.deltaTime;
         else
             stunTimer = 0;
+        
+        if (throwTimer > 0)
+            throwTimer -= Time.deltaTime;
+        else
+            throwTimer = 0;
     }
 }

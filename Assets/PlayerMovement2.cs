@@ -25,6 +25,9 @@ public class PlayerMovement2 : MonoBehaviour
     public float airDrag;
     public float airIdleDrag;
 
+    public bool useThrowDrag;
+    public float throwDrag;
+
     public float xVel;
     public float yVel;
 
@@ -170,7 +173,12 @@ public class PlayerMovement2 : MonoBehaviour
 
         float acceleration = normalAccel + accelMod;
 
-        if (!myTracker.isDashing && !keepLandingSpeed)
+        if (useThrowDrag)
+        {
+            dragToUse = throwDrag;
+        }
+
+        else if (!myTracker.isDashing && !keepLandingSpeed)
         {
             if (grounded)
             {
@@ -200,10 +208,14 @@ public class PlayerMovement2 : MonoBehaviour
 
 
         xVel *= Mathf.Exp(-dragToUse * Time.fixedDeltaTime);
+        if (useThrowDrag)
+        yVel *= Mathf.Exp(-dragToUse * Time.fixedDeltaTime);
     }
 
     void Gravity()
     {
+        if (useThrowDrag) return;
+        
         xInput = (int)Input.GetAxisRaw("Horizontal");
 
         if (!grounded)

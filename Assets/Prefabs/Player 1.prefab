@@ -64,7 +64,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 2, y: 2}
+    oldSize: {x: 1, y: 1}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -143,15 +143,15 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: -747781779, guid: 0c76887c91fdf4c788fe1c9509308623, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1.28, y: 1.28}
+  m_Size: {x: 1, y: 1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 0
+  m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!95 &3906878219574434791
@@ -186,6 +186,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 32ca614ab0b8e4732ab72d2d1eebbc12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  InputActions: {fileID: 0}
+  throwAction:
+    m_Name: 
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: cdf8186a-f32b-4b5c-b1cb-8f810e2bc955
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings: []
+    m_Flags: 0
   throwDir: {x: 0, y: 0}
   flightVel: 10
   myPos: {x: 0, y: 0, z: 0}
@@ -215,6 +225,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e782f5cd9c3b45ff9fbfe41f4f8653d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  InputActions: {fileID: 0}
+  playerActions:
+    m_Name: 
+    m_Id: 4fce7113-c59b-483f-8dcf-646fb4bc6cec
+    m_Asset: {fileID: 0}
+    m_Actions: []
+    m_Bindings: []
+  uiActions:
+    m_Name: 
+    m_Id: 561817c4-ffb3-42d7-bc11-5e5a43231632
+    m_Asset: {fileID: 0}
+    m_Actions: []
+    m_Bindings: []
+  pauseFilter: {fileID: 0}
+  maxHealth: 10
+  currentHealth: 0
+  maxStamina: 10
+  currentStamina: 0
+  staminaRecoveryRate: 3
+  dashStamina: 5
+  stunTimer: 0
   ground:
     serializedVersion: 2
     m_Bits: 256
@@ -247,6 +278,7 @@ MonoBehaviour:
   halfHeight: 0
   halfWidth: 0
   savedXVel: 0
+  hitStop: 0.05
 --- !u!114 &3906878219574434797
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -265,6 +297,7 @@ MonoBehaviour:
   jumpForce: 20
   isJumping: 0
   normalAccel: 160
+  accelMod: 0
   dashAccelMod: 0
   moveSpeed: 12
   groundDrag: 5

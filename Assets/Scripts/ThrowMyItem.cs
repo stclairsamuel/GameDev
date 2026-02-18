@@ -1,9 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class ThrowMyItem : MonoBehaviour
 {    
+    public InputActionAsset InputActions;
+
+    public InputAction throwAction;
+
     private Rigidbody2D rb;
 
     public Vector2 throwDir;
@@ -16,11 +21,20 @@ public class ThrowMyItem : MonoBehaviour
 
     public GameObject throwingRings;
 
+    void OnEnable()
+    {
+        
+    }
+    void OnDisable()
+    {
+        
+    }
+
     // Start is called before the first frame update
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        
+        throwAction = InputActions.FindAction("Throw");
     }
 
 
@@ -34,16 +48,15 @@ public class ThrowMyItem : MonoBehaviour
     void TakeInputs()
     {
         mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+    }
 
-        if (Input.GetMouseButtonDown(1))
-        {
-            throwDir = (mouseWorldPos - myPos).normalized;
+    public void ThrowItem()
+    {
+        throwDir = (mouseWorldPos - myPos).normalized;
                     
-            GameObject thrown = Instantiate(throwingRings, myPos, Quaternion.identity);
+        GameObject thrown = Instantiate(throwingRings, myPos, Quaternion.identity);
 
-            ThrowingRing thrownScript = thrown.GetComponent<ThrowingRing>();
-            thrownScript.flyDir = throwDir;
-
-        }
+        ThrowingRing thrownScript = thrown.GetComponent<ThrowingRing>();
+        thrownScript.flyDir = throwDir;
     }
 }
