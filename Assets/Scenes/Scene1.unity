@@ -767,8 +767,16 @@ PrefabInstance:
       value: Mawbat
       objectReference: {fileID: 0}
     - target: {fileID: 2640045263613591310, guid: 86e3889ce09454e67803da08780f9d92, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2640045263613591310, guid: 86e3889ce09454e67803da08780f9d92, type: 3}
       propertyPath: sightRange
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 2640045263613591311, guid: 86e3889ce09454e67803da08780f9d92, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 86e3889ce09454e67803da08780f9d92, type: 3}

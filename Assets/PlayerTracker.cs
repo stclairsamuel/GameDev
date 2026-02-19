@@ -394,7 +394,7 @@ public class PlayerTracker : MonoBehaviour
             Attack?.Invoke();
         }
 
-        if (m_throwAction.WasPerformedThisFrame())
+        if (m_throwAction.WasPerformedThisFrame() && !isThrowing)
         {
             StartThrow();
         }

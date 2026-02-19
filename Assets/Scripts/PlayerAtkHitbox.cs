@@ -6,6 +6,8 @@ public class PlayerAtkHitbox : MonoBehaviour
 {
     Rigidbody2D rb;
 
+    public float damage;
+
     public float knockbackMag;
 
     // Start is called before the first frame update
@@ -17,7 +19,7 @@ public class PlayerAtkHitbox : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        Debug.Log(gameObject);
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -26,7 +28,7 @@ public class PlayerAtkHitbox : MonoBehaviour
         {
             DamageInfo info = new DamageInfo(
                 gameObject,
-                2f,
+                damage,
                 rb.velocity.normalized,
                 knockbackMag,
                 0.02f
