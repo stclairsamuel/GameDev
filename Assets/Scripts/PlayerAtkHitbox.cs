@@ -19,7 +19,7 @@ public class PlayerAtkHitbox : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Debug.Log(gameObject);
+        
     }
 
     void OnTriggerEnter2D(Collider2D other)

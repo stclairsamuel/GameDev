@@ -27,6 +27,8 @@ public class PlayerMovement2 : MonoBehaviour
 
     public bool useThrowDrag;
     public float throwDrag;
+    public float activeThrowDrag;
+    public float throwDragMod;
 
     public float xVel;
     public float yVel;
@@ -173,9 +175,19 @@ public class PlayerMovement2 : MonoBehaviour
 
         float acceleration = normalAccel + accelMod;
 
+        if (!useThrowDrag && throwDragMod != 0)
+        {
+            throwDragMod = 0;
+        }
+
         if (useThrowDrag)
         {
-            dragToUse = throwDrag;
+            throwDragMod -= 8f * Time.deltaTime;
+            dragToUse = throwDrag + throwDragMod;
+            if (throwDrag + throwDragMod <= 0)
+            {
+                myTracker.StopThrow();
+            }
         }
 
         else if (!myTracker.isDashing && !keepLandingSpeed)
@@ -214,7 +226,9 @@ public class PlayerMovement2 : MonoBehaviour
 
     void Gravity()
     {
-        if (useThrowDrag) return;
+        float gravToUse = gravity;
+        if (useThrowDrag)
+            gravToUse = -throwDragMod * 3f;
         
         xInput = (int)Input.GetAxisRaw("Horizontal");
 
@@ -229,7 +243,7 @@ public class PlayerMovement2 : MonoBehaviour
             }
             else
             {
-                yVel = Mathf.Clamp(yVel - (fastFall ? gravity * Time.fixedDeltaTime * fastFallMult : gravity * Time.fixedDeltaTime), -terminalVel, Mathf.Infinity);
+                yVel = Mathf.Clamp(yVel - (fastFall ? gravToUse * Time.fixedDeltaTime * fastFallMult : gravToUse * Time.fixedDeltaTime), -terminalVel, Mathf.Infinity);
             }
         }
         else if ((grounded || touchingWall) && yVel < 0)

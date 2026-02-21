@@ -325,6 +325,7 @@ public class PlayerTracker : MonoBehaviour
 
     void TakeInput()
     {
+        /*
         if (m_pause.WasPerformedThisFrame())
         {
             Time.timeScale = 0;
@@ -339,6 +340,7 @@ public class PlayerTracker : MonoBehaviour
             InputActions.FindActionMap("Player").Enable();
             InputActions.FindActionMap("UI").Disable();
         }
+        */
 
         m_moveAmt = m_moveAction.ReadValue<Vector2>();
         if (m_moveAmt.x != 0) m_moveAmt.x = Mathf.Sign(m_moveAmt.x);
@@ -399,7 +401,7 @@ public class PlayerTracker : MonoBehaviour
             StartThrow();
         }
 
-        if (m_throwAction.WasReleasedThisFrame())
+        if (m_throwAction.WasReleasedThisFrame() && holdingThrow)
         {
             InitThrow();
         }
@@ -407,9 +409,7 @@ public class PlayerTracker : MonoBehaviour
         if (throwTimer == 0 && isThrowing)
         {
             throwScript.ThrowItem();
-            isThrowing = false;
-            m_moveAction.Enable();
-            m_dashAction.Enable();
+            StopThrow();
         }
 
         if (xInput == -Mathf.Sign(myMov.xVel) && xInput != 0 && isDashing)
@@ -428,6 +428,14 @@ public class PlayerTracker : MonoBehaviour
         holdingThrow = false;
         throwTimer = throwTime;
         isThrowing = true;
+    }
+    public void StopThrow()
+    {
+        holdingThrow = false;
+        throwTimer = 0;
+        isThrowing = false;
+        m_moveAction.Enable();
+        m_dashAction.Enable();
     }
 
     void StartJump()
@@ -487,7 +495,13 @@ public class PlayerTracker : MonoBehaviour
     public void Damage(DamageInfo info)
     {
         float freezeTime = 0.2f;
+
         tS.RequestFreeze(freezeTime);
+
+        if (isThrowing || holdingThrow)
+        {
+            StopThrow();
+        }
 
         currentHealth -= info.Damage;
         myMov.xVel = info.Knockback.x;

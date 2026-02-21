@@ -1,10 +1,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
-public class MenuButton : MonoBehaviour
+public class FallingWeapon : MonoBehaviour
 {
+    private Rigidbody2D rb;
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -16,11 +22,4 @@ public class MenuButton : MonoBehaviour
     {
         
     }
-
-    public void OnStartClick()
-    {
-        SceneManager.LoadScene("Scene1");
-    }
-
-
 }

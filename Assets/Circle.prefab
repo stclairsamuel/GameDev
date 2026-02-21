@@ -103,7 +103,9 @@ MonoBehaviour:
   flightVel: 40
   flyDir: {x: 0, y: 0}
   bounceCDTime: 0.05
-  maxBounces: 5
+  maxBounces: 3
+  flyTime: 0.2
+  gravity: 80
 --- !u!50 &1716256114886989434
 Rigidbody2D:
   serializedVersion: 4
@@ -117,7 +119,7 @@ Rigidbody2D:
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
-  m_LinearDrag: 0
+  m_LinearDrag: 0.2
   m_AngularDrag: 0
   m_GravityScale: 0
   m_Material: {fileID: 6200000, guid: 37857b1a1825145d1898a9b4263db72f, type: 2}
