@@ -23,13 +23,15 @@ public class StaminaBar : MonoBehaviour
         realValue = 1;
         displayValue = realValue;
 
-        player = GameObject.FindWithTag("Player");
-        pTracker = player.GetComponent<PlayerTracker>();
+
     }
 
     void Start()
     {
         maxStamina = pTracker.maxStamina;
+        
+        player = GameObject.FindWithTag("Player");
+        pTracker = player.GetComponent<PlayerTracker>();
     }
 
     // Update is called once per frame

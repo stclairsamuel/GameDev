@@ -17,6 +17,12 @@ public class Hazards : MonoBehaviour
         hazardTilemap = GetComponent<Tilemap>();
     }
 
+    void Start()
+    {
+        player = GameObject.FindWithTag("Player");
+        pTracker = player.GetComponent<PlayerTracker>();
+    }
+
     // Update is called once per frame
     void Update()
     {

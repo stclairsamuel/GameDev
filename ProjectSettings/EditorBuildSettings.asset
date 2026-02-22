@@ -20,4 +20,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MainMenu.unity
     guid: 0210b8cc3d83c6a4694974017c3616a3
+  - enabled: 1
+    path: Assets/Scenes/EpicScene.unity
+    guid: f3334a732e94f44e3851c2f91323741f
   m_configObjects: {}

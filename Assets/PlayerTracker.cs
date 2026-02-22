@@ -20,8 +20,6 @@ public class PlayerTracker : MonoBehaviour
     private InputAction m_pause;
     private InputAction m_continue;
 
-    public GameObject pauseFilter;
-
     private Vector2 m_moveAmt;
 
     public event Action OnGroundTouch;
@@ -158,7 +156,7 @@ public class PlayerTracker : MonoBehaviour
 
         tS = GameObject.FindWithTag("TimeStop").GetComponent<TimeStop>();
 
-        facingDir = 1;
+        
 
         currentHealth = maxHealth;
         currentStamina = maxStamina;
@@ -166,7 +164,8 @@ public class PlayerTracker : MonoBehaviour
 
     void Start()
     {
-        pauseFilter.SetActive(false);
+
+        facingDir = 1;
     }
     
     void FixedUpdate()
