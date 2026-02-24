@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1716256114886989433}
   - component: {fileID: 1716256114886989432}
   - component: {fileID: 1716256114886989434}
-  - component: {fileID: 8487508907959810680}
+  - component: {fileID: -7947642673693767288}
   m_Layer: 15
   m_Name: Circle
   m_TagString: Untagged
@@ -100,8 +100,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0323d52f970064b57a3b94976214955f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  fallingItem: {fileID: 1522905921158429195, guid: c9deb320ff0a84644b4add39aee71602, type: 3}
   flightVel: 40
   flyDir: {x: 0, y: 0}
+  bounceVelDampen: 0.7
+  xVel: 0
+  yVel: 0
   bounceCDTime: 0.05
   maxBounces: 3
   flyTime: 0.2
@@ -122,12 +126,12 @@ Rigidbody2D:
   m_LinearDrag: 0.2
   m_AngularDrag: 0
   m_GravityScale: 0
-  m_Material: {fileID: 6200000, guid: 37857b1a1825145d1898a9b4263db72f, type: 2}
+  m_Material: {fileID: 0}
   m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 4
---- !u!61 &8487508907959810680
+--- !u!61 &-7947642673693767288
 BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -136,7 +140,7 @@ BoxCollider2D:
   m_GameObject: {fileID: 1716256114886989437}
   m_Enabled: 1
   m_Density: 1
-  m_Material: {fileID: 6200000, guid: 37857b1a1825145d1898a9b4263db72f, type: 2}
+  m_Material: {fileID: 6200000, guid: a5b871bb7121c7e4a9e0f12718677112, type: 2}
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
@@ -151,7 +155,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 0.15, y: 0.15}
+  m_Size: {x: 0.2, y: 0.2}
   m_EdgeRadius: 0
 --- !u!1 &2489086389257081712
 GameObject:

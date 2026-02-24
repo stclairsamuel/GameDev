@@ -12,6 +12,11 @@ public class ThrowingRing : MonoBehaviour
 
     public Vector2 flyDir;
 
+    public float bounceVelDampen;
+
+    public float xVel;
+    public float yVel;
+
     float bounceCount = 0;
     public float bounceCDTime = 0.05f;
     float bounceCDTimer;
@@ -25,6 +30,8 @@ public class ThrowingRing : MonoBehaviour
 
     public float gravity;
 
+    Vector3 myPos;
+
 
     void Awake()
     {
@@ -34,7 +41,10 @@ public class ThrowingRing : MonoBehaviour
 
     void Start()
     {
-        rb.velocity = flyDir.normalized * flightVel;
+        Vector2 f = (flyDir.normalized * flightVel);
+
+        xVel = f.x;
+        yVel = f.y;
 
         flyTimer = flyTime;
     }
@@ -42,6 +52,8 @@ public class ThrowingRing : MonoBehaviour
     void Update()
     {
         Timers();
+
+        myPos = transform.position;
     }
 
     void FixedUpdate()
@@ -50,6 +62,8 @@ public class ThrowingRing : MonoBehaviour
 
         if (isFalling)
             Gravity();
+
+        rb.velocity = new Vector2(xVel, yVel);
     }
 
     void DestroySelf()
@@ -59,23 +73,48 @@ public class ThrowingRing : MonoBehaviour
 
     void Gravity()
     {
-        rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y - (gravity * Time.fixedDeltaTime));
+        yVel -= (gravity * Time.fixedDeltaTime);
     }
     
-    void OnCollisionEnter2D()
+    void OnCollisionEnter2D(Collision2D impact)
     {
+        if (impact.contactCount == 0)
+        {
+            return;
+        }
+
+        Debug.Log(impact.contactCount);
+
+        foreach (ContactPoint2D c in impact.contacts)
+        {
+            Debug.Log(c.normal);
+        }
+
+        Vector2 norm = impact.contacts[0].normal;
+
+        Vector2 reflectedVel = Vector2.Reflect(new Vector2(xVel, yVel), norm);
+
+        xVel = reflectedVel.x * bounceVelDampen;
+        yVel = reflectedVel.y * bounceVelDampen;
+
         if (bounceCDTimer == 0)
         {
-
             bounceCDTimer = bounceCDTime;
 
             if (bounceCount >= maxBounces)
             {
-                Destroy(gameObject);
+                KillMyself();
             }
 
             bounceCount += 1f;
         }
+    }
+
+    void KillMyself()
+    {
+        GameObject.Instantiate(fallingItem, rb.position, Quaternion.identity);
+
+        Destroy(gameObject);
     }
 
     void Timers()
