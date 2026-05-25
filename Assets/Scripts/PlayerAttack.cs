@@ -10,19 +10,20 @@ public class PlayerAttack : MonoBehaviour
 
     public List<GameObject> attacks;
 
+    public GameObject dashAttack;
+
     public event Action successfulHit;
 
-    public float attackCDTime;
-    float attackCDTimer;
+    float attackCdTimer;
     public float attackBufferTime;
-    float attackBufferTimer;
+    public float attackBufferTimer;
     public float resetTime;
     float resetTimer;
 
     public float knockback;
     public float damage;
 
-    bool isAttacking = false;
+    public bool isAttacking = false;
 
     public int attackStep = 0;
 
@@ -48,40 +49,33 @@ public class PlayerAttack : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (attackBufferTimer > 0 && attackCDTimer == 0)
+        Timers();
+
+        if (attackBufferTimer > 0 && attackCdTimer == 0)
             StartAttack();
         
-        isAttacking = attackCDTimer > 0;
+        isAttacking = attackCdTimer > 0;
 
         if (resetTimer == 0)
         {
             attackStep = 0;
         }
-            
-
-        Timers();
     }
 
     void AttackRecieved()
     {
-        if (isAttacking)
-        {
-            attackBufferTimer = attackBufferTime;
-        }
-        if (!isAttacking)
-        {
-            StartAttack();
-        }
-
+        StartAttack();
     }
 
     void StartAttack()
     {
         hitObjects = new List<Collider2D>();
-        resetTimer = resetTime + attackCDTime;
-        attackCDTimer = attackCDTime;
+        resetTimer = resetTime + myTracker.attackCdTime;
 
-        GameObject newSlice = Instantiate(attacks[attackStep]);
+        bool isDashing = myTracker.isDashing;
+
+        GameObject newSlice = isDashing ? Instantiate(dashAttack) : Instantiate(attacks[attackStep]);
+
         PlayerSliceAnim sliceScript = newSlice.GetComponent<PlayerSliceAnim>();
         sliceScript.attackController = gameObject.GetComponent<PlayerAttack>();
 
@@ -98,15 +92,7 @@ public class PlayerAttack : MonoBehaviour
 
     void Timers()
     {
-        if (attackCDTimer > 0)
-            attackCDTimer -= Time.deltaTime;
-        else
-            attackCDTimer = 0;
-        
-        if (attackBufferTimer > 0)
-            attackBufferTimer -= Time.deltaTime;
-        else
-            attackBufferTimer = 0;
+        attackCdTimer = myTracker.attackCdTimer;
         
         if (resetTimer > 0)
             resetTimer -= Time.deltaTime;

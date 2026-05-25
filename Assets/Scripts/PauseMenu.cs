@@ -14,6 +14,9 @@ public class PauseMenu : MonoBehaviour
     public InputActionMap uiActions;
 
     public GameObject pauseFilter;
+    public GameObject changeAbilitiesMenu;
+
+    public List<GameObject> menues;
 
     public InputAction pauseAction;
     public InputAction continueAction;
@@ -38,7 +41,12 @@ public class PauseMenu : MonoBehaviour
         pauseAction = InputActions.FindAction("Pause");
         continueAction = InputActions.FindAction("Continue");
 
-        Continue();
+        menues = new List<GameObject> {
+            pauseFilter,
+            changeAbilitiesMenu
+        };
+
+        pauseFilter.SetActive(false);
     }
 
     // Start is called before the first frame update
@@ -76,15 +84,33 @@ public class PauseMenu : MonoBehaviour
 
     public void Continue()
     {
-        Time.timeScale = 1;
-        pauseFilter.SetActive(false);
-        InputActions.FindActionMap("Player").Enable();
-        InputActions.FindActionMap("UI").Disable();        
+        if (pauseFilter.activeSelf)
+        {
+            Time.timeScale = 1;
+            pauseFilter.SetActive(false);
+            InputActions.FindActionMap("Player").Enable();
+            InputActions.FindActionMap("UI").Disable();        
+        }
+        else
+        {
+            SwitchScreen(pauseFilter);
+        }
     }
 
     public void MainMenu()
     {
         SceneManager.LoadScene("MainMenu");
+    }
+
+    public void SwitchScreen(GameObject screen)
+    {
+        foreach (GameObject g in menues)
+        {
+            if (g == screen)
+                g.SetActive(true);
+            else
+                g.SetActive(false);
+        }
     }
     
 }

@@ -26,7 +26,6 @@ public class PlayerMovement2 : MonoBehaviour
     public float airIdleDrag;
 
     public bool useThrowDrag;
-    public float throwDrag;
     public float activeThrowDrag;
     public float throwDragMod;
 
@@ -171,64 +170,26 @@ public class PlayerMovement2 : MonoBehaviour
 
         int xInput = (int)Input.GetAxisRaw("Horizontal");
 
-        float dragToUse = 0;
+        Vector2 dragToUse = myTracker.GetDrag();
 
-        float acceleration = normalAccel + accelMod;
+        xVel *= Mathf.Exp(-dragToUse.x * Time.fixedDeltaTime);
 
-        if (!useThrowDrag && throwDragMod != 0)
-        {
-            throwDragMod = 0;
-        }
-
-        if (useThrowDrag)
-        {
-            throwDragMod -= 8f * Time.deltaTime;
-            dragToUse = throwDrag + throwDragMod;
-            if (throwDrag + throwDragMod <= 0)
-            {
-                myTracker.StopThrow();
-            }
-        }
-
-        else if (!myTracker.isDashing && !keepLandingSpeed)
-        {
-            if (grounded)
-            {
-                if (xInput == 0)
-                    dragToUse = groundIdleDrag;
-                else if (Mathf.Abs(xVel) > moveSpeed)
-                    dragToUse = groundDrag;
-            }
-            else
-            {
-                if (xInput == 0)
-                    dragToUse = airIdleDrag;
-                else if (Mathf.Abs(xVel) > moveSpeed)
-                    dragToUse = airDrag;
-            }
-        }
-
-        if (acceleration != normalAccel && !myTracker.isDashing)
-        {
-            if (grounded)
-                accelMod *= Mathf.Exp(-5f * Time.fixedDeltaTime);
-            else
-                accelMod *= Mathf.Exp(-2f * Time.fixedDeltaTime);
-        }
-        if (Mathf.Abs(accelMod) < 0.2f)
-            accelMod = 0;
-
-
-        xVel *= Mathf.Exp(-dragToUse * Time.fixedDeltaTime);
-        if (useThrowDrag)
-        yVel *= Mathf.Exp(-dragToUse * Time.fixedDeltaTime);
+        yVel *= Mathf.Exp(-dragToUse.y * Time.fixedDeltaTime);
     }
 
     void Gravity()
     {
         float gravToUse = gravity;
+
+        bool useThrowDrag = myTracker.isThrowing || myTracker.holdingThrow;
+
         if (useThrowDrag)
-            gravToUse = -throwDragMod * 3f;
+            gravToUse = myTracker.GetDrag().x * 3f;
+        
+        if (myTracker.impactedWall && myTracker.touchingWall)
+        {
+            gravToUse = 0;
+        }
         
         xInput = (int)Input.GetAxisRaw("Horizontal");
 

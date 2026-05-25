@@ -32,6 +32,13 @@ public class PlayerTracker : MonoBehaviour
     public event Action Jump;
     public event Action Dash;
 
+    float globalBufferTime = 0.2f;
+    Dictionary<string, float> bufferTimers = new Dictionary<string, float> {
+        { "jump", 0 },
+        { "attack", 0 },
+        { "dash", 0 }
+    };
+
     public float maxHealth;
     public float currentHealth;
 
@@ -58,7 +65,7 @@ public class PlayerTracker : MonoBehaviour
     public int facingDir;
 
     public bool lockSpeed;
-
+    
     [Header("Controls")]
     public KeyCode jumpKey = KeyCode.Space;
     public KeyCode dashKey = KeyCode.LeftShift;
@@ -69,19 +76,28 @@ public class PlayerTracker : MonoBehaviour
     [Header("Throw Stuffs")]
     public float throwTime;
     public float throwTimer;
-    public float throwAirStall;
-    bool holdingThrow;
+    public bool holdingThrow;
     Vector2 throwDir;
-    bool isThrowing;
-    
+    public bool isThrowing;
 
+    public float throwAirDrag;
+
+    public float throwStallTime;
+    float throwStallTimer = 0;
+
+    public float throwStallIntensity;
+
+    [Header("Attack Stuffs")]
+    public float dashAtkDrag;
+
+    public float attackCdTime;
+    public float attackCdTimer;
+    
     [Header("Jump Stuffs")]
     public bool isJumping;
     public float jumpTime;
     float jumpTimer;
 
-    public float jumpBufferTime;
-    float jumpBufferTimer;
     public float coyoteTime;
     public float coyoteTimer;
 
@@ -91,6 +107,9 @@ public class PlayerTracker : MonoBehaviour
 
     public float landingSpeedTime;
     public float landingSpeedTimer;
+
+    public float dashAtkDragTime;
+    float dashAtkDragTimer;
 
     [Header("WallStuffs")]
     public bool touchingWall;
@@ -102,6 +121,9 @@ public class PlayerTracker : MonoBehaviour
 
     public float superWallJumpTime;
     public float superWallJumpTimer;
+
+    public float wallImpactStunTime;
+    public bool impactedWall = false;
 
     [Header("Dash Stuffs")]
     public bool isDashing;
@@ -117,6 +139,8 @@ public class PlayerTracker : MonoBehaviour
     public float savedXVel;
 
     public float hitStop;
+
+    public ParticleSystem wallImpactParticles;
 
     void OnEnable()
     {
@@ -186,13 +210,13 @@ public class PlayerTracker : MonoBehaviour
         halfHeight = mySize.y / 2f;
         halfWidth = mySize.x / 2f;
 
-        TakeInput();
-
         lockSpeed = false;
 
         GroundCheck();
         WallsCheck();
         TopCheck();
+
+        TakeInput();
 
         Timers();
 
@@ -209,9 +233,6 @@ public class PlayerTracker : MonoBehaviour
         {
             currentStamina = maxStamina;
         }
-
-        myMov.useThrowDrag = isThrowing || holdingThrow;
-
     }
 
     void GroundCheck()
@@ -264,6 +285,20 @@ public class PlayerTracker : MonoBehaviour
 
         //Set Wall Touched
 
+        if (touchingWall != wasTouchingWall)
+        {
+            if (touchingWall)
+            {
+                WallTouch();
+                OnWallTouch?.Invoke();
+            }
+            else
+            {
+                WallLeave();
+                OnWallLeave?.Invoke();
+            }
+        }
+
         if (touchingWall)
         {
             wallTouched = (touchingLeft ? -1 : 1);
@@ -281,21 +316,6 @@ public class PlayerTracker : MonoBehaviour
             canWallJump = false;
         }
 
-
-
-        if (touchingWall != wasTouchingWall)
-        {
-            if (touchingWall)
-            {
-                WallTouch();
-                OnWallTouch?.Invoke();
-            }
-            else
-            {
-                WallLeave();
-                OnWallLeave?.Invoke();
-            }
-        }
         if (touchingLeft)
             myMov.xVel = Mathf.Clamp(myMov.xVel, 0, Mathf.Infinity);
         if (touchingRight)
@@ -324,64 +344,59 @@ public class PlayerTracker : MonoBehaviour
 
     void TakeInput()
     {
-        /*
-        if (m_pause.WasPerformedThisFrame())
-        {
-            Time.timeScale = 0;
-            pauseFilter.SetActive(true);
-            InputActions.FindActionMap("Player").Disable();
-            InputActions.FindActionMap("UI").Enable();
-        }
-        if (m_continue.WasPerformedThisFrame())
-        {
-            Time.timeScale = 1;
-            pauseFilter.SetActive(false);
-            InputActions.FindActionMap("Player").Enable();
-            InputActions.FindActionMap("UI").Disable();
-        }
-        */
-
         m_moveAmt = m_moveAction.ReadValue<Vector2>();
         if (m_moveAmt.x != 0) m_moveAmt.x = Mathf.Sign(m_moveAmt.x);
 
         canDashJump = dashJumpTimer > 0;
 
-        if (stunTimer == 0)
+        if (!(stunTimer > 0) && impactedWall)
         {
-            //xInput = Input.GetAxisRaw("Horizontal");
+            impactedWall = false;
+        }
+
+        bool isStunned = stunTimer > 0;
+
+        if (!isStunned)
+        {
             xInput = m_moveAmt.x;
         }
         else
         {
             xInput = 0;
-            return;
         }
 
         isDashing = dashTimer > 0;
 
-        bool canJump = grounded || touchingWall || coyoteTimer > 0;
+        bool canJump = (grounded || touchingWall || coyoteTimer > 0) && !isStunned;
+        bool canAttack = (attackCdTimer == 0);
 
         if (m_jumpAction.WasPerformedThisFrame())
         {
             if (canJump)
                 StartJump();
             else
-                jumpBufferTimer = jumpBufferTime;
+                BufferInput("jump");
         }
-        if (jumpBufferTimer > 0 && canJump)
+        if (CheckBuffer("jump") && canJump)
         {
             StartJump();
+            ReleaseBuffer("jump");
         }
 
         if ((m_jumpAction.WasReleasedThisFrame()  || (jumpTimer == 0)) && isJumping)
         {
-            StopJump();
+            if (!isStunned)
+                StopJump();
         }
         if (m_jumpAction.WasReleasedThisFrame())
         {
-            jumpBufferTimer = 0;
+            ReleaseBuffer("jump");
         }
 
+        if (isStunned)
+            return;
+
+        //dash input check
         if (m_dashAction.WasPerformedThisFrame() && currentStamina > dashStamina)
         {
             dashTimer = dashTime;
@@ -390,9 +405,21 @@ public class PlayerTracker : MonoBehaviour
             myMov.StartDash();
         }
 
+        //attack input check
+        if (CheckBuffer("attack") && canAttack)
+            ExecuteAttack();
+            ReleaseBuffer("attack");
+
         if (m_attackAction.WasPerformedThisFrame())
         {
-            Attack?.Invoke();
+            if (canAttack)
+                ExecuteAttack();
+            else
+                BufferInput("attack");
+        }
+        if (m_attackAction.WasReleasedThisFrame())
+        {
+            ReleaseBuffer("attack");
         }
 
         if (m_throwAction.WasPerformedThisFrame() && !isThrowing)
@@ -418,6 +445,7 @@ public class PlayerTracker : MonoBehaviour
     void StartThrow()
     {
         holdingThrow = true;
+        throwStallTimer = throwStallTime;
 
         m_moveAction.Disable();
         m_dashAction.Disable();
@@ -439,7 +467,6 @@ public class PlayerTracker : MonoBehaviour
 
     void StartJump()
     {
-        jumpBufferTimer = 0;
         isJumping = true;
         myMov.StartJump();
         Jump?.Invoke();
@@ -450,6 +477,18 @@ public class PlayerTracker : MonoBehaviour
         isJumping = false;
         myMov.StopJump();
         jumpTimer = 0;
+    }
+
+    void ExecuteAttack()
+    {
+        Attack?.Invoke();
+
+        attackCdTimer = attackCdTime;
+
+        if (isDashing)
+        {
+            dashAtkDragTimer = dashAtkDragTime;
+        }
     }
 
     void GroundTouch()
@@ -475,6 +514,11 @@ public class PlayerTracker : MonoBehaviour
         }
         else
             superWallJumpTimer = 0;
+
+        if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed + 2f)
+        {
+            ImpactIntoWall();
+        }
     }
     void WallLeave()
     {
@@ -489,6 +533,29 @@ public class PlayerTracker : MonoBehaviour
 
         else
             coyoteTimer = coyoteTime;
+
+        impactedWall = false;
+    }
+
+    void ImpactIntoWall()
+    {
+        StunPlayer(wallImpactStunTime);
+
+        if (myMov.yVel < 0)
+            myMov.yVel = 0;
+
+        impactedWall = true;
+
+        SummonImpactParticles();
+
+
+    }
+
+    private void SummonImpactParticles()
+    {
+        Quaternion rotation = Quaternion.FromToRotation(Vector2.right, new Vector2(-facingDir, 0));
+
+        Instantiate(wallImpactParticles, myPos + new Vector2(halfWidth * facingDir, 0), rotation);
     }
 
     public void Damage(DamageInfo info)
@@ -506,18 +573,88 @@ public class PlayerTracker : MonoBehaviour
         myMov.xVel = info.Knockback.x;
         myMov.yVel = info.Knockback.y;
 
-        stunTimer = info.StunTime;
+        StunPlayer(info.StunTime);
+    }
+
+    public void StunPlayer(float stunTime)
+    {
+        stunTimer = stunTime;
+    }
+
+    public Vector2 GetDrag()
+    {
+        /* rules:
+            player dashing? no drag
+            play in air? less drag
+            player on ground? lots of drag
+            player holding throw? lots of drag which decreases over time
+            player in dash strike? some drag
+            take whichever drag is greatest
+        */
+
+        float dragToUse = 0;
+        Vector2 dragAxis = Vector2.right;
+
+        bool useThrowDrag = isThrowing || holdingThrow;
+
+        bool useDashAtkDrag = dashAtkDragTimer > 0;
+
+        bool keepLandingSpeed = landingSpeedTimer > 0;
+
+        if (useThrowDrag)
+        {
+            float throwDragPercent = throwStallTimer / throwStallTime;
+
+            float dragAmt = throwDragPercent * throwStallIntensity;
+
+            Debug.Log(dragAmt);
+
+            dragToUse = dragAmt;
+            dragAxis = new Vector2(1, 1);
+
+            if (throwDragPercent <= 0)
+                StopThrow();
+
+            
+        }
+
+        else if (!isDashing && !keepLandingSpeed)
+        {
+            if (grounded)
+            {
+                if (xInput == 0)
+                    dragToUse = myMov.groundIdleDrag;
+                else if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
+                    dragToUse = myMov.groundDrag;
+            }
+            else
+            {
+                if (xInput == 0)
+                    dragToUse = myMov.airIdleDrag;
+                else if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
+                    dragToUse = myMov.airDrag;
+            }
+        }
+
+        float accelMod = myMov.accelMod;
+
+        float acceleration = myMov.normalAccel + accelMod;
+
+        if (acceleration != myMov.normalAccel && !isDashing)
+        {
+            if (grounded)
+                myMov.accelMod *= Mathf.Exp(-5f * Time.fixedDeltaTime);
+            else
+                myMov.accelMod *= Mathf.Exp(-2f * Time.fixedDeltaTime);
+        }
+        if (Mathf.Abs(accelMod) < 0.2f)
+            myMov.accelMod = 0;
+
+        return dragToUse * dragAxis;
     }
 
     public void HitEnemy()
     {
-        if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
-        {
-            myMov.yVel = 14f;
-        }
-
-        
-
         if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
         {
             myMov.xVel = facingDir * -6f;
@@ -531,6 +668,44 @@ public class PlayerTracker : MonoBehaviour
         tS.RequestFreeze(hitStop);
 
         //landingSpeedTimer = landingSpeedTime;
+    }
+
+    void BufferInput(string inputToBuffer)
+    {
+        try
+        {
+            bufferTimers[inputToBuffer] = globalBufferTime;
+        }
+        catch
+        {
+            Debug.Log(new string(inputToBuffer + " is not a bufferable input"));
+        }
+    }
+
+    bool CheckBuffer(string bufferToCheck)
+    {
+        try
+        {
+            bool returnValue = bufferTimers[bufferToCheck] > 0;
+            return returnValue;
+        }
+        catch
+        {
+            Debug.Log(new string(bufferToCheck + " is not a checkable input"));
+            return false;
+        }
+    }
+
+    void ReleaseBuffer(string bufferToRelease)
+    {
+        try
+        {
+            bufferTimers[bufferToRelease] = 0;
+        }
+        catch
+        {
+            Debug.Log(new string(bufferToRelease + " is not a setable input"));
+        }
     }
 
     void Timers()
@@ -549,11 +724,6 @@ public class PlayerTracker : MonoBehaviour
             dashJumpTimer -= Time.deltaTime;
         else
             dashJumpTimer = 0;
-        
-        if (jumpBufferTimer > 0)
-            jumpBufferTimer -= Time.deltaTime;
-        else
-            jumpBufferTimer = 0;
 
         if (coyoteTimer > 0)
             coyoteTimer -= Time.deltaTime;
@@ -579,5 +749,40 @@ public class PlayerTracker : MonoBehaviour
             throwTimer -= Time.deltaTime;
         else
             throwTimer = 0;
+
+        if (throwStallTimer > 0)
+            throwStallTimer -= Time.deltaTime;
+        else
+            throwStallTimer = 0;
+
+        if (dashAtkDragTimer > 0)
+            dashAtkDragTimer -= Time.deltaTime;
+        else
+            dashAtkDragTimer = 0;
+
+        if (attackCdTimer > 0)
+            attackCdTimer -= Time.deltaTime;
+        else
+            attackCdTimer = 0;
+
+        TickBufferTimers();
+    }
+
+    void TickBufferTimers()
+    {
+        List<string> keys = new List<string>(bufferTimers.Keys);
+
+        foreach (string key in keys)
+        {
+            if (bufferTimers[key] > 0)
+            {
+                bufferTimers[key] -= Time.deltaTime;
+                
+                if (bufferTimers[key] < 0)
+                {
+                    bufferTimers[key] = 0;
+                }
+            }
+        }
     }
 }

@@ -5,6 +5,7 @@ using UnityEngine;
 public class ThrowingRing : MonoBehaviour
 {
     private Rigidbody2D rb;
+    private Collider2D col;
 
     public GameObject fallingItem;
 
@@ -16,6 +17,8 @@ public class ThrowingRing : MonoBehaviour
 
     public float xVel;
     public float yVel;
+
+    public float size;
 
     float bounceCount = 0;
     public float bounceCDTime = 0.05f;
@@ -37,6 +40,8 @@ public class ThrowingRing : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+        col = GetComponent<Collider2D>();
     }
 
     void Start()
@@ -78,10 +83,46 @@ public class ThrowingRing : MonoBehaviour
     
     void OnCollisionEnter2D(Collision2D impact)
     {
+        Vector2 normToUse = Vector2.zero;
+
         if (impact.contactCount == 0)
         {
             return;
         }
+
+        if (impact.contactCount == 1)
+        {
+            normToUse = impact.contacts[0].normal;
+        }
+
+        if (impact.contactCount > 1)
+        {
+            Vector2 avgVector = Vector2.zero;
+
+            foreach (ContactPoint2D c in impact.contacts)
+            {
+                avgVector += c.normal;
+            }
+
+            avgVector /= impact.contactCount;
+
+            normToUse = avgVector;
+        }
+
+        /*
+
+        if (impact.contactCount == 2)
+        {
+            Vector2 origin = Vector2.Lerp(impact.contacts[0].point, impact.contacts[1].point, 0.5f);
+
+            Vector2 velDir = new Vector2(xVel, yVel).normalized;
+
+            Vector2 newPos = origin - (velDir);
+
+            rb.position = newPos;
+        }
+
+        */
 
         Debug.Log(impact.contactCount);
 
@@ -96,6 +137,8 @@ public class ThrowingRing : MonoBehaviour
 
         xVel = reflectedVel.x * bounceVelDampen;
         yVel = reflectedVel.y * bounceVelDampen;
+
+        rb.velocity = new Vector2(xVel, yVel);
 
         if (bounceCDTimer == 0)
         {
