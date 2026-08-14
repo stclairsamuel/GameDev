@@ -1,56 +1,111 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
-public class PlayerAttackLegacy : MonoBehaviour
+public class PlayerAttack : MonoBehaviour
 {
-    /*
-    public PlayerMovement pMov;
-    public PlayerTracker pTracker;
-    public PlayerAnimation pAnim;
+    private SpriteRenderer rend;
+    private PlayerTracker myTracker;
 
-    public Vector2 knockback;
+    public List<GameObject> attacks;
 
-    public List<Collider2D> hitObjects = new List<Collider2D>();
+    public GameObject dashAttack;
 
-    private Collider2D hitBox;
+    public event Action successfulHit;
+
+    float attackCdTimer;
+    public float attackBufferTime;
+    public float attackBufferTimer;
+    public float resetTime;
+    float resetTimer;
+
+    public float knockback;
+    public float damage;
+
+    public bool isAttacking = false;
+
+    public int attackStep = 0;
+
+    private List<Collider2D> hitObjects;
+
+    void OnEnable()
+    {
+        myTracker.Attack += AttackRecieved;
+    }
+    void OnDisable()
+    {
+        myTracker.Attack -= AttackRecieved;
+    }
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
-        hitBox = GetComponent<Collider2D>();
+        rend = GetComponent<SpriteRenderer>();
+
+        myTracker = GetComponentInParent<PlayerTracker>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        hitBox.enabled = pAnim.attackTimer > 0;
+        Timers();
 
-        if (!hitBox.enabled && hitObjects.Count > 0)
+        if (attackBufferTimer > 0 && attackCdTimer == 0)
+            StartAttack();
+        
+        isAttacking = attackCdTimer > 0;
+
+        if (resetTimer == 0)
         {
-            hitObjects = new List<Collider2D>();
+            attackStep = 0;
         }
     }
 
-    void OnTriggerEnter2D(Collider2D collider)
+    void AttackRecieved()
     {
-        if (hitObjects.Contains(collider))
-        {
-            return;
-        }
-
-        if (collider.TryGetComponent<EnemyBody>(out EnemyBody hitBody))
-        {
-            DamageInfo info = new DamageInfo(
-                gameObject,
-                10f,
-                new Vector2(knockback.x * pMov.facingDir, knockback.y)
-            );
-
-            hitBody.GetHit(info);
-        }
-
-        hitObjects.Add(collider);
+        StartAttack();
     }
-    */
+
+    void StartAttack()
+    {
+        hitObjects = new List<Collider2D>();
+        resetTimer = resetTime + myTracker.attackCdTime;
+
+        GameObject newSlice = Instantiate(attacks[attackStep]);
+
+        PlayerSliceAnim sliceScript = newSlice.GetComponent<PlayerSliceAnim>();
+        sliceScript.attackController = gameObject.GetComponent<PlayerAttack>();
+
+        if (attackStep < attacks.Count - 1)
+            attackStep += 1;
+        else
+            attackStep = 0;
+    }
+
+    public void RushAttack()
+    {
+        hitObjects = new List<Collider2D>();
+
+        GameObject newSlice = Instantiate(dashAttack);
+
+        PlayerSliceAnim sliceScript = newSlice.GetComponent<PlayerSliceAnim>();
+        sliceScript.attackController = gameObject.GetComponent<PlayerAttack>();
+    }
+
+    public void SuccessfulHit()
+    {
+        successfulHit?.Invoke();
+    }
+
+    void Timers()
+    {
+        attackCdTimer = myTracker.attackCdTimer;
+        
+        if (resetTimer > 0)
+            resetTimer -= Time.deltaTime;
+        else
+            resetTimer = 0;
+    }
+
 }

@@ -1,415 +1,896 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using System;
+using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 
-public class PlayerTrackerLegacy : MonoBehaviour
+public class PlayerTracker : MonoBehaviour
 {
-/*
-    public event Action OnPlayerDamaged;
+    public InputActionAsset InputActions;
 
-    public event Action OnGroundContact;
-    public event Action OnWallContact;
+    public InputActionMap playerActions;
+    public InputActionMap uiActions;
 
-    public float startingHealth;
+    private InputAction m_jumpAction;
+    private InputAction m_attackAction;
+    private InputAction m_moveAction;
+    private InputAction m_dashAction;
+    private InputAction m_throwAction;
+    private InputAction m_pause;
+    private InputAction m_continue;
+
+    private Vector2 m_moveAmt;
+
+    public event Action OnGroundTouch;
+    public event Action OnGroundLeave;
+    public event Action OnWallTouch;
+    public event Action OnWallLeave;
+
+    public event Action Attack;
+
+    public event Action Jump;
+    public event Action Dash;
+
+    float globalBufferTime = 0.2f;
+
+    public float maxHealth;
     public float currentHealth;
 
-    public TimeStop timeStop;
+    public float maxStamina;
+    public float currentStamina;
+    public float staminaRecoveryRate;
+    public float dashStamina;
 
-    public PlayerMovement pMov;
-    public Dash dash;
+    public float stunTimer;
 
-    public Vector2 myPos;
+    private Rigidbody2D rb;
+    private Collider2D col;
 
-    float stunTimer;
+    private PlayerMovement2 myMov;
+    private PlayerDash2 myDash;
+    private PlayerAttack myAttack;
+    private ThrowMyItem throwScript;
 
-    public Vector2 externalVel;
-
-    public Vector3 myScale;
-
-    public float gravity;
-
-    public bool grounded;
+    private TimeStop tS;
 
     public LayerMask ground;
+    public bool grounded;
 
-    public bool touchingLeft;
-    public bool touchingRight;
-    public bool grabbingWall;
-    public float wallDrag;
-    public float wallSlideSpeed;
+    public int facingDir;
 
-    float predictedX;
-    float predictedY;
+    public bool lockSpeed;
+    
+    [Header("Controls")]
+    public KeyCode jumpKey = KeyCode.Space;
+    public KeyCode dashKey = KeyCode.LeftShift;
 
-    float halfHeight;
-    float halfWidth;
+    public float xInput;
+    public float yInput;
 
-    public float jumpBufferTime;
-    public float jumpBufferTimer;
+    [Header("Throw Stuffs")]
+    public float throwTime;
+    public float throwTimer;
+    public bool holdingThrow;
+    Vector2 throwDir;
+    public bool isThrowing;
 
-    public float dashWallJumpTime;
-    public float dashWallJumptimer;
+    public float throwAirDrag;
 
-    public float storedXVel;
-    public float storedVelTime;
-    public float storedVelTimer;
+    public float throwStallTime;
+    public float throwStallTimer = 0;
 
-    private List<RaycastHit2D> groundChecks = new List<RaycastHit2D>() { 
-        new RaycastHit2D(),
-        new RaycastHit2D(),
-        new RaycastHit2D()
-    };
-    private List<RaycastHit2D> topChecks = new List<RaycastHit2D>() { 
-        new RaycastHit2D(),
-        new RaycastHit2D(),
-        new RaycastHit2D()
-    };
-    private List<RaycastHit2D> leftChecks = new List<RaycastHit2D>() { 
-        new RaycastHit2D(),
-        new RaycastHit2D(),
-        new RaycastHit2D()
-    };
-    private List<RaycastHit2D> rightChecks = new List<RaycastHit2D>() { 
-        new RaycastHit2D(),
-        new RaycastHit2D(),
-        new RaycastHit2D()
+    public float throwStallIntensity;
+
+    [Header("Attack Stuffs")]
+
+    public Dictionary<string, bool> activeAttackStates = new Dictionary<string, bool> {
+        { "attacking" , false },
+        { "rushing", false },
+        { "dashAttacking", false }
     };
 
-    private void OnEnable()
+    public float dashAtkDrag;
+
+    public float attackCdTime;
+    public float attackCdTimer;
+
+    public float dashAtkTime;
+    public float dashAtkTimer;
+
+    public bool dashAtkBuffered = false;
+    public float timeHoldingRush = 0;
+
+    public bool isRushing = false;
+    
+    [Header("Jump Stuffs")]
+    public bool isJumping;
+    public float jumpTime;
+    float jumpTimer;
+
+    public float coyoteTime;
+    public float coyoteTimer;
+
+    public float dashJumpTime;
+    float dashJumpTimer;
+    public bool canDashJump;
+
+    public float landingSpeedTime;
+    public float landingSpeedTimer;
+
+    public float dashAtkDragTime;
+    public float dashAtkDragTimer = 0;
+
+    [Header("WallStuffs")]
+    public bool touchingWall;
+    public int wallTouched;
+    public int lastWallTouched;
+    public bool canWallJump;
+
+    public bool canDashWallJump;
+
+    public float superWallJumpTime;
+    public float superWallJumpTimer;
+
+    public float wallImpactStunTime;
+    public bool impactedWall = false;
+
+    [Header("Dash Stuffs")]
+    public bool isDashing;
+    public float dashTime;
+    float dashTimer;
+
+    public Vector2 myPos;
+    private Vector2 mySize;
+
+    public float halfHeight;
+    public float halfWidth;
+
+    public float savedXVel;
+
+    public float hitStop;
+
+    public ParticleSystem wallImpactParticles;
+
+    Dictionary<string, float> bufferTimers = new Dictionary<string, float> {
+        { "jump", 0 },
+        { "attack", 0 },
+        { "dash", 0 }
+    };
+
+    void OnEnable()
     {
-        OnGroundContact += GroundTouch;
+        myAttack.successfulHit += HitEnemy;
+
+        InputActions.FindActionMap("Player").Enable();
+        InputActions.FindActionMap("UI").Disable();
     }
-    private void OnDisable()
+    void OnDisable()
     {
-        OnGroundContact -= GroundTouch;
+        myAttack.successfulHit -= HitEnemy;
+
+        InputActions.FindActionMap("Player").Disable();
     }
 
     // Start is called before the first frame update
-    private void Awake()
+    void Awake()
     {
+        playerActions = InputActions.FindActionMap("Player");
+        uiActions = InputActions.FindActionMap("UI");
+
+        m_jumpAction = InputActions.FindAction("Jump");
+        m_attackAction = InputActions.FindAction("Attack");
+        m_dashAction = InputActions.FindAction("Dash");
+        m_moveAction = InputActions.FindAction("Move");
+        m_throwAction = InputActions.FindAction("Throw");
+        m_pause = InputActions.FindAction("Pause");
+        m_continue = InputActions.FindAction("Continue");
+ 
+        rb = GetComponent<Rigidbody2D>();
+        col = GetComponent<Collider2D>();
+
+        myMov = GetComponent<PlayerMovement2>();
+        myDash = GetComponent<PlayerDash2>();
+        myAttack = GetComponentInChildren<PlayerAttack>();
+        throwScript = GetComponent<ThrowMyItem>();
+
+        tS = GameObject.FindWithTag("TimeStop").GetComponent<TimeStop>();
+
         
-        transform.localScale = new Vector3 (myScale.x, myScale.y, transform.localScale.z);
-        
-        halfWidth = myScale.x/2f;
-        halfHeight = myScale.y/2f;
+
+        currentHealth = maxHealth;
+        currentStamina = maxStamina;
+    }
+
+    void Start()
+    {
+        facingDir = 1;
+    }
+    
+    void FixedUpdate()
+    {
+        if (xInput != 0)
+        {
+            facingDir = (int)xInput;
+            myMov.Move();
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        myPos = transform.position;
+        myPos = rb.position;
+        mySize = col.bounds.size;
 
-        predictedX = myPos.x + ReturnXVel(pMov.xVel) * Time.deltaTime;
-        predictedY = myPos.y + ReturnYVel(pMov.yVel) * Time.deltaTime;
+        halfHeight = mySize.y / 2f;
+        halfWidth = mySize.x / 2f;
 
-        TestPMov();
+        lockSpeed = false;
 
-        CheckGround();
-        CheckTop();
+        GroundCheck();
+        WallsCheck();
+        TopCheck();
 
-        externalVel.x *= Mathf.Exp(-0.9f * Time.deltaTime);
-        if (Mathf.Abs(externalVel.x) < 0.5f) { externalVel.x = 0; }
-        
-        CheckWalls();
-        
+        TakeInput();
+
         Timers();
 
         if (currentHealth <= 0)
         {
             SceneManager.LoadScene("DeathScreen");
         }
-    }
 
-    void TestPMov()
-    {
-        if (dash.isDashing)
+        if (currentStamina < maxStamina)
         {
-            pMov.enabled = false;
-            externalVel.x = 0;
-            dash.rb.velocity = new Vector2(dash.dashForce * pMov.facingDir, 0);
-            pMov.coyoteTimer = 0;
+            currentStamina += Time.deltaTime * staminaRecoveryRate;
         }
         else
         {
-            pMov.enabled = true;
-        }
-
-        if (stunTimer > 0)
-        {
-            pMov.takeInput = false;
-        }
-        else
-        {
-            pMov.takeInput = true; 
+            currentStamina = maxStamina;
         }
     }
 
-    public float ReturnXVel(float xMov)
+    void GroundCheck()
     {
-        if (stunTimer > 0)
-        {
-            return externalVel.x;
-        }
-        if (Mathf.Abs(externalVel.x) > Mathf.Abs(xMov))
-        {
-            if (pMov.xInput == -Mathf.Sign(externalVel.x))
-            {
-                externalVel.x += pMov.xInput * pMov.activeMoveSpeed * Time.deltaTime;
-            }
+        float skinWidth = 0.02f;
 
-            return externalVel.x;
-        }
-        if (Mathf.Abs(externalVel.x) < Mathf.Abs(xMov))
+        float boxBottom = myPos.y - halfHeight;
+        float boxLeft = myPos.x - halfWidth;
+
+        Vector2 rayOrigin = new Vector2(boxLeft + skinWidth, boxBottom - skinWidth);
+        float rayLength = mySize.x - (2f * skinWidth);
+
+        bool wasGrounded = grounded;
+
+        grounded = Physics2D.Raycast(rayOrigin, Vector2.right, rayLength, ground);
+
+        if (wasGrounded && !grounded)
         {
-            if (pMov.xInput != 0)
+            GroundLeave();
+            OnGroundLeave?.Invoke();
+        }
+        if (!wasGrounded && grounded)
+        {
+            GroundTouch();
+            OnGroundTouch?.Invoke();
+        }
+    }
+
+    void WallsCheck()
+    {
+        //Variables
+
+        float skinWidth = 0.02f;
+
+        float boxBottom = myPos.y - halfHeight;
+        float boxLeft = myPos.x - halfWidth;
+        float boxRight = myPos.x + halfWidth;
+
+        Vector2 leftOrigin = new Vector2(boxLeft - skinWidth, boxBottom + skinWidth);
+        Vector2 rightOrigin = new Vector2(boxRight + skinWidth, boxBottom + skinWidth);
+
+        float rayLength = mySize.y - (2f * skinWidth);
+
+        bool wasTouchingWall = touchingWall;
+
+        bool touchingLeft = Physics2D.Raycast(leftOrigin, Vector2.up, rayLength, ground);
+        bool touchingRight = Physics2D.Raycast(rightOrigin, Vector2.up, rayLength, ground);
+
+        touchingWall = touchingLeft || touchingRight;
+
+        //Set Wall Touched
+
+        if (touchingWall != wasTouchingWall)
+        {
+            if (touchingWall)
             {
-                externalVel.x = 0;
+                WallTouch();
+                OnWallTouch?.Invoke();
             }
+            else
+            {
+                WallLeave();
+                OnWallLeave?.Invoke();
+            }
+        }
+
+        if (touchingWall)
+        {
+            wallTouched = (touchingLeft ? -1 : 1);
+            canWallJump = true;
         }
         
-        return xMov;
-    }
-
-    public float ReturnYVel(float yVel)
-    {
-        return yVel;
-    }
-
-    public void CheckWalls()
-    {
-        RaycastHit2D leftCast = Physics2D.BoxCast(myPos, new Vector2(myScale.x, 0.2f), 0, Vector2.left, 0.1f, ground);
-        RaycastHit2D rightCast = Physics2D.BoxCast(myPos, new Vector2(myScale.x, 0.2f), 0, Vector2.right, 0.1f, ground);
-
-        float offSet = Mathf.Sign(ReturnXVel(pMov.xVel)) * halfWidth + 0.2f * Mathf.Sign(ReturnXVel(pMov.xVel));
-
-        RaycastHit2D topForwards = Physics2D.Raycast(new Vector2(myPos.x, myPos.y + halfHeight/2f), new Vector2(Mathf.Sign(ReturnXVel(pMov.xVel)), 0), halfWidth + 0.2f, ground);
-        RaycastHit2D bottomForwards = Physics2D.Raycast(new Vector2(myPos.x, myPos.y - halfHeight/2f), new Vector2(Mathf.Sign(ReturnXVel(pMov.xVel)), 0), halfWidth + 0.2f, ground);
-
-        RaycastHit2D topClipping = Physics2D.Raycast(new Vector2(myPos.x + offSet, myPos.y + halfHeight/2f), Vector2.up, halfHeight/2f, ground);
-        RaycastHit2D bottomClipping = Physics2D.Raycast(new Vector2(myPos.x + offSet, myPos.y - halfHeight/2f), Vector2.down, halfHeight/2f, ground);
-
-        if (!topForwards && topClipping)
+        if (!touchingWall)
+            wallTouched = 0;
+        
+        if (wallTouched != 0)
+            lastWallTouched = wallTouched;
+        
+        if (!touchingWall && coyoteTimer == 0)
         {
-            if (Mathf.Abs(ReturnXVel(pMov.xVel)) > pMov.baseMoveSpeed || dash.isDashing)
-                SetPos(new Vector2(myPos.x, myPos.y - halfHeight/2f + topClipping.distance - 0.02f));
+            canWallJump = false;
         }
 
-        bool leftLastFrame = touchingLeft;
-        bool rightLastFrame = touchingRight;
+        if (touchingLeft)
+            myMov.xVel = Mathf.Clamp(myMov.xVel, 0, Mathf.Infinity);
+        if (touchingRight)
+            myMov.xVel = Mathf.Clamp(myMov.xVel, -Mathf.Infinity, 0);
+    }
 
-        touchingLeft = leftCast;
-        touchingRight = rightCast;
+    void TopCheck()
+    {
+        float skinWidth = 0.02f;
 
-        if (touchingLeft && !leftLastFrame || touchingRight && !rightLastFrame)
+        float boxTop = myPos.y + halfHeight;
+        float boxLeft = myPos.x - halfWidth;
+
+        Vector2 rayOrigin = new Vector2(boxLeft + skinWidth, boxTop + skinWidth);
+        float rayLength = mySize.x - (2f * skinWidth);
+
+        bool topCheck = Physics2D.Raycast(rayOrigin, Vector2.right, rayLength, ground);
+
+        if (topCheck)
         {
-            if (Mathf.Abs(pMov.xVel) > Mathf.Abs(storedXVel))
-            {
-                storedXVel = pMov.xVel;
-            }
-            storedVelTimer = storedVelTime;
+            myMov.yVel = Mathf.Clamp(myMov.yVel, -Mathf.Infinity, 0);
+            if (isJumping)
+                StopJump();
+        }
+    }
+
+    void TakeInput()
+    {
+        if (!isRushing)
+            m_moveAmt = m_moveAction.ReadValue<Vector2>();
+        else
+            m_moveAmt = new Vector2(facingDir, 0);
+        if (m_moveAmt.x != 0) m_moveAmt.x = Mathf.Sign(m_moveAmt.x);
+
+        canDashJump = dashJumpTimer > 0;
+
+        if (!(stunTimer > 0) && impactedWall)
+        {
+            impactedWall = false;
         }
 
-        if (pMov.xInput == -1 && touchingLeft || pMov.xInput == 1 && touchingRight)
+        bool isStunned = stunTimer > 0;
+
+        if (!isStunned)
         {
-            grabbingWall = true;
+            xInput = m_moveAmt.x;
         }
         else
         {
-            grabbingWall = false;
+            xInput = 0;
         }
 
-        if ((Mathf.Sign(ReturnXVel(pMov.xVel)) == -1 && touchingLeft || Mathf.Sign(ReturnXVel(pMov.xVel)) == 1 && touchingRight)) { pMov.xVel = 0; }
+        isDashing = dashTimer > 0;
 
-        if (touchingLeft && !grounded && pMov.xInput != -1)
-        {
-            pMov.coyoteTimer = pMov.coyoteTime;
-            pMov.coyoteTimeWall = -1;
-        }
-        if (touchingRight && !grounded && pMov.xInput != 1)
-        {
-            pMov.coyoteTimer = pMov.coyoteTime;
-            pMov.coyoteTimeWall = 1;
-        }
-        if (pMov.coyoteTimer == 0)
-        {
-            pMov.coyoteTimeWall = 0;
-        }
+        bool canJump = (grounded || touchingWall || coyoteTimer > 0) && !isStunned;
+        bool canAttack = (attackCdTimer == 0 && !isDashing);
 
-        if (Mathf.Abs(externalVel.x) > 7f)
+        if (m_jumpAction.WasPerformedThisFrame())
         {
-            if ((externalVel.x < 0 && touchingLeft) || (externalVel.x > 0 && touchingLeft))
-            {
-                externalVel.x *= -0.2f;
-            }
-        }
-    }
-
-    public void CheckGround()
-    {
-        bool groundedLastFrame = grounded;
-
-        grounded = Physics2D.BoxCast(myPos - new Vector2(0, halfHeight), new Vector2(myScale.x, 0.05f), 0, Vector2.down, 0.1f, ground);
-
-        if (grounded && !groundedLastFrame)
-        {
-            OnGroundContact?.Invoke();
-        }
-
-        if (grounded && pMov.yVel < 0)
-        {
-            if (!groundedLastFrame && Mathf.Abs(pMov.xVel) > pMov.baseMoveSpeed)
-            {
-                    pMov.lockSpeedTimer = pMov.lockSpeedTime;
-            }
-            pMov.yVel = -2f;
-        }
-        else if (grabbingWall && pMov.yVel <= 0)
-        {
-            if (pMov.yVel < -wallSlideSpeed)
-                pMov.yVel *= Mathf.Exp(-wallDrag * Time.deltaTime);
+            if (canJump)
+                StartJump();
             else
-                pMov.yVel = -wallSlideSpeed;
+                BufferInput("jump");
         }
-        else
+        if (CheckBuffer("jump") && canJump)
         {
-            if (groundedLastFrame && (pMov.jumpTimer == 0))
-            {
-                pMov.coyoteTimer = pMov.coyoteTime;
-            }
-                
-            Gravity();
+            StartJump();
+            ReleaseBuffer("jump");
         }
-    }
 
-    public void CheckTop()
-    {
-        RaycastHit2D groundTest = Physics2D.BoxCast(myPos + new Vector2(0, halfHeight), new Vector2(myScale.x, 0.05f), 0, Vector2.up, 0.1f, ground);
-
-        if (groundTest && pMov.yVel > 0)
+        if ((m_jumpAction.WasReleasedThisFrame()  || (jumpTimer == 0)) && isJumping)
         {
-            float[] topHeights = new float[3];
+            if (!isStunned)
+                StopJump();
+        }
+        if (m_jumpAction.WasReleasedThisFrame())
+        {
+            ReleaseBuffer("jump");
+        }
 
-            for (int i = 0; i < topChecks.Count; i++)
-            {
-                Vector2 offSet = new Vector2((-halfWidth + i * halfWidth), 0);
-                topChecks[i] = Physics2D.Raycast(myPos + offSet, Vector2.up, 100f, ground);
-                topHeights[i] = topChecks[i].collider ? myPos.y + topChecks[i].distance : Mathf.Infinity;
-            }
+        if (isStunned)
+            return;
 
-            bool left = topHeights[0] - myPos.y < halfHeight + 0.2f;
-            bool mid = topHeights[1] - myPos.y < halfHeight + 0.2f;
-            bool right = topHeights[2] - myPos.y < halfHeight + 0.2f;
+        //dash input check
+        if (m_dashAction.WasPerformedThisFrame() && currentStamina > dashStamina)
+        {
+            ExecuteDash();
+        }
 
-            if (left && !mid && !right)
-            {
-                RaycastHit2D ray = Physics2D.Raycast(myPos + new Vector2(0, halfHeight + 0.2f), Vector2.left, halfWidth, ground);
-                float correctedX = myPos.x + (halfWidth - ray.distance + 0.02f);
-                SetPos(new Vector2(correctedX, myPos.y));
-            }
-            else if (right && !mid && !left)
-            {
-                RaycastHit2D ray = Physics2D.Raycast(myPos + new Vector2(0, halfHeight + 0.2f), Vector2.right, halfWidth, ground);
-                float correctedX = myPos.x - (halfWidth - ray.distance + 0.02f);
-                SetPos(new Vector2(correctedX, myPos.y));
-            }
+        //attack input check
+        if (CheckBuffer("attack") && canAttack)
+            ExecuteAttack();
+            ReleaseBuffer("attack");
 
+        if (m_attackAction.WasPerformedThisFrame())
+        {
+            if (canAttack)
+                ExecuteAttack();
             else
-            {
-                pMov.yVel = -0.02f;
-                if (pMov.isJumping)
-                {
-                    pMov.JumpStop();
-                }
-            }
+                BufferInput("attack");
+                if (dashAtkTimer > 0)
+                    dashAtkBuffered = true;
+                    BufferInput("attack");
+        }
+        if (m_attackAction.WasReleasedThisFrame())
+        {
+            ReleaseBuffer("attack");
+        }
 
+        if (m_throwAction.WasPerformedThisFrame() && !isThrowing)
+        {
+            StartThrow();
+        }
+
+        if (m_throwAction.WasReleasedThisFrame() && holdingThrow)
+        {
+            InitThrow();
+        }
+
+        if (throwTimer == 0 && isThrowing)
+        {
+            throwScript.ThrowItem();
+            StopThrow();
+        }
+
+        if (isRushing)
+            RunRushChecks();
+
+        if (xInput == -Mathf.Sign(myMov.xVel) && xInput != 0 && isDashing)
+            dashTimer = 0;
+    }
+
+    void ExecuteDash()
+    {
+        dashTimer = dashTime;
+        dashJumpTimer = dashJumpTime;
+        currentStamina -= dashStamina;
+        myMov.StartDash();
+
+        if (m_attackAction.IsPressed())
+            StartRush();
+        else
+            dashAtkTimer = dashAtkTime + dashTime;
+    }
+
+    void StartRush()
+    {
+        Debug.Log("Rush Started");
+
+        timeHoldingRush = 0;
+        isRushing = true;
+
+        activeAttackStates["rushing"] = true;
+    }
+
+    void ReleaseRush()
+    {
+        Debug.Log("Rush Released");
+
+        isRushing = false;
+        timeHoldingRush = 0;
+    }
+
+    void ExecuteRushAttack()
+    {
+        ReleaseRush();
+
+        Debug.Log("Rush Attack Executed");
+
+        myAttack.RushAttack();
+    }
+
+    void RunRushChecks()
+    {
+        if (touchingWall)
+        {
+            float wallCheckDist = 0.2f;
+
+            bool facingWall = Physics2D.Raycast(myPos, Vector2.right * facingDir, wallCheckDist, ground);
+
+            if (facingWall)
+                WallSlamWhileRushing();
+        }
+
+        if (m_attackAction.WasReleasedThisFrame())
+        {
+            ExecuteRushAttack();
         }
     }
 
-    void Gravity()
+    void WallSlamWhileRushing()
     {
-        pMov.yVel -= gravity * Time.deltaTime;
-        pMov.yVel = Mathf.Clamp(pMov.yVel, -20f, Mathf.Infinity);
+        ReleaseRush();
     }
 
-    public void Damage(GameObject hitBy, float damageAmt, Vector2 knockback, float freezeTime = 0.2f, float stunTime = 0.3f)
+    void ExecuteAttack()
     {
-        pMov.coyoteTimer = 0;
-        if (dash.isDashing)
+        Attack?.Invoke();
+
+        attackCdTimer = attackCdTime;
+
+        if (dashAtkTimer > 0)
         {
-            dash.DashEnd();
+            dashAtkDragTimer = dashAtkDragTime;
+        }
+    }
+
+    void StartThrow()
+    {
+        holdingThrow = true;
+        throwStallTimer = throwStallTime;
+
+        m_moveAction.Disable();
+        m_dashAction.Disable();
+    }
+    void InitThrow()
+    {
+        holdingThrow = false;
+        throwTimer = throwTime;
+        isThrowing = true;
+    }
+    public void StopThrow()
+    {
+        holdingThrow = false;
+        throwTimer = 0;
+        isThrowing = false;
+        m_moveAction.Enable();
+        m_dashAction.Enable();
+    }
+
+    void StartJump()
+    {
+        isJumping = true;
+        myMov.StartJump();
+        Jump?.Invoke();
+        jumpTimer = jumpTime;
+    }
+    void StopJump()
+    {
+        isJumping = false;
+        myMov.StopJump();
+        jumpTimer = 0;
+    }
+
+    void GroundTouch()
+    {
+        if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
+        {
+            landingSpeedTimer = landingSpeedTime;
+        }
+        if (superWallJumpTimer > 0)
+            superWallJumpTimer = 0;
+    }
+    void GroundLeave()
+    {
+        if (!isJumping)
+            coyoteTimer = coyoteTime;
+    }
+    void WallTouch()
+    {
+        if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
+        {
+            savedXVel = myMov.xVel;
+            superWallJumpTimer = superWallJumpTime;
         }
         else
+            superWallJumpTimer = 0;
+
+        if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed + 2f)
         {
-            dash.dashCooldownTimer = 0.1f;
+            ImpactIntoWall();
+        }
+    }
+    void WallLeave()
+    {
+        if (isJumping)
+        {
+            if (superWallJumpTimer > 0)
+            {
+                float arbitraryLeeway = 0.1f;
+                superWallJumpTimer = arbitraryLeeway;
+            }
         }
 
-        externalVel.x = knockback.x;
-        pMov.yVel = knockback.y;
+        else
+            coyoteTimer = coyoteTime;
 
-        timeStop.RequestFreeze(freezeTime);
+        impactedWall = false;
+    }
 
+    void ImpactIntoWall()
+    {
+        StunPlayer(wallImpactStunTime);
+
+        if (myMov.yVel < 0)
+            myMov.yVel = 0;
+
+        impactedWall = true;
+
+        SummonImpactParticles();
+
+
+    }
+
+    private void SummonImpactParticles()
+    {
+        Quaternion rotation = Quaternion.FromToRotation(Vector2.right, new Vector2(-facingDir, 0));
+
+        Instantiate(wallImpactParticles, myPos + new Vector2(halfWidth * facingDir, 0), rotation);
+    }
+
+
+
+    public void Damage(DamageInfo info)
+    {
+        float freezeTime = 0.2f;
+
+        tS.RequestFreeze(freezeTime);
+
+        if (isThrowing || holdingThrow)
+        {
+            StopThrow();
+        }
+
+        currentHealth -= info.Damage;
+        myMov.xVel = info.Knockback.x;
+        myMov.yVel = info.Knockback.y;
+
+        StunPlayer(info.StunTime);
+    }
+
+    public void StunPlayer(float stunTime)
+    {
         stunTimer = stunTime;
-        
-        currentHealth -= damageAmt;
-
-        OnPlayerDamaged?.Invoke();
     }
 
-    public void SetPos(Vector2 newPos)
+    public Vector2 GetDrag()
     {
-        transform.position = newPos;
-        myPos = newPos;
-        predictedX = newPos.x + ReturnXVel(pMov.xVel) * Time.deltaTime;
-        predictedY = newPos.y + ReturnYVel(pMov.yVel) * Time.deltaTime;
+        /* rules:
+            player dashing? no drag
+            play in air? less drag
+            player on ground? lots of drag
+            player holding throw? lots of drag which decreases over time
+            player in dash strike? some drag
+            take whichever drag is greatest
+        */
+
+        float dragToUse = 0;
+        Vector2 dragAxis = Vector2.right;
+
+        bool useThrowDrag = isThrowing || holdingThrow;
+
+        bool useDashAtkDrag = dashAtkDragTimer > 0;
+
+        bool keepLandingSpeed = landingSpeedTimer > 0;
+
+        if (useThrowDrag)
+        {
+            float throwDragPercent = throwStallTimer / throwStallTime;
+
+            float dragAmt = (1f - throwDragPercent) * throwStallIntensity;
+
+            dragToUse = dragAmt;
+            dragAxis = new Vector2(1, 1);
+
+            if (throwDragPercent <= 0)
+                StopThrow();
+        }
+
+        else if (useDashAtkDrag)
+        {
+            float dashAtkDragPercent = dashAtkDragTimer / dashAtkDragTime;
+
+            dragToUse = (1f - dashAtkDragPercent) * dashAtkDrag;
+            dragAxis = new Vector2(1, 1);
+        }
+
+        else if (isRushing)
+        {
+            dragToUse = 0;
+        }
+
+        else if (!isDashing && !keepLandingSpeed)
+        {
+            if (grounded)
+            {
+                if (xInput == 0)
+                    dragToUse = myMov.groundIdleDrag;
+                else if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
+                    dragToUse = myMov.groundDrag;
+            }
+            else
+            {
+                if (xInput == 0)
+                    dragToUse = myMov.airIdleDrag;
+                else if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
+                    dragToUse = myMov.airDrag;
+            }
+        }
+
+        float accelMod = myMov.accelMod;
+
+        float acceleration = myMov.normalAccel + accelMod;
+
+        if (acceleration != myMov.normalAccel && !isDashing)
+        {
+            if (grounded)
+                myMov.accelMod *= Mathf.Exp(-5f * Time.fixedDeltaTime);
+            else
+                myMov.accelMod *= Mathf.Exp(-2f * Time.fixedDeltaTime);
+        }
+        if (Mathf.Abs(accelMod) < 0.2f)
+            myMov.accelMod = 0;
+
+        return dragToUse * dragAxis;
+    }
+
+    public void HitEnemy()
+    {
+        if (Mathf.Abs(myMov.xVel) > myMov.moveSpeed)
+        {
+            myMov.xVel = facingDir * -6f;
+            myMov.accelMod = -160f;
+
+            if (!grounded)
+            {
+                float boost = 12f;
+                myMov.yVel = boost;
+            }
+        }
+        else
+        {
+            myMov.xVel = facingDir * -8f;
+        }
+
+        dashAtkDragTimer = 0;
+
+        tS.RequestFreeze(hitStop);
+
+        //landingSpeedTimer = landingSpeedTime;
+    }
+
+    void BufferInput(string inputToBuffer, float timeToBuffer = 0.2f)
+    {
+        try
+        {
+            bufferTimers[inputToBuffer] = timeToBuffer;
+        }
+        catch
+        {
+            Debug.Log(new string(inputToBuffer + " is not a bufferable input"));
+        }
+    }
+
+    bool CheckBuffer(string bufferToCheck)
+    {
+        try
+        {
+            bool returnValue = bufferTimers[bufferToCheck] > 0;
+            return returnValue;
+        }
+        catch
+        {
+            Debug.Log(new string(bufferToCheck + " is not a checkable input"));
+            return false;
+        }
+    }
+
+    void ReleaseBuffer(string bufferToRelease)
+    {
+        try
+        {
+            bufferTimers[bufferToRelease] = 0;
+        }
+        catch
+        {
+            Debug.Log(new string(bufferToRelease + " is not a setable input"));
+        }
     }
 
     void Timers()
     {
+        if (jumpTimer > 0)
+            jumpTimer -= Time.deltaTime;
+        else
+            jumpTimer = 0;
+        
+        if (dashTimer > 0)
+            dashTimer -= Time.deltaTime;
+        else
+            dashTimer = 0;
+        
+        if (dashJumpTimer > 0)
+            dashJumpTimer -= Time.deltaTime;
+        else
+            dashJumpTimer = 0;
+
+        if (coyoteTimer > 0)
+            coyoteTimer -= Time.deltaTime;
+        else
+            coyoteTimer = 0;
+
+        if (landingSpeedTimer > 0)
+            landingSpeedTimer -= Time.deltaTime;
+        else
+            landingSpeedTimer = 0;
+
+        if (superWallJumpTimer > 0)
+            superWallJumpTimer -= Time.deltaTime;
+        else
+            superWallJumpTimer = 0;
+        
         if (stunTimer > 0)
-        {
-            stunTimer -= Time.deltaTime;  
-        }
+            stunTimer -= Time.deltaTime;
         else
-        {
             stunTimer = 0;
-        }
-
-        if (jumpBufferTimer > 0)
-        {
-            jumpBufferTimer -= Time.deltaTime;
-        }
+        
+        if (throwTimer > 0)
+            throwTimer -= Time.deltaTime;
         else
-        {
-            jumpBufferTimer = 0;
-        }
+            throwTimer = 0;
 
-        if (dashWallJumptimer > 0)
-        {
-            dashWallJumptimer -= Time.deltaTime;
-        }
+        if (throwStallTimer > 0)
+            throwStallTimer -= Time.deltaTime;
         else
-        {
-            dashWallJumptimer = 0;
-        }
+            throwStallTimer = 0;
 
-        if (storedVelTimer > 0)
-        {
-            storedVelTimer -= Time.deltaTime;
-        }
+        if (dashAtkDragTimer > 0)
+            dashAtkDragTimer -= Time.deltaTime;
         else
-        {
-            storedVelTimer = 0;
-        }
+            dashAtkDragTimer = 0;
+
+        if (attackCdTimer > 0)
+            attackCdTimer -= Time.deltaTime;
+        else
+            attackCdTimer = 0;
+        
+        if (dashAtkTimer > 0)
+            dashAtkTimer -= Time.deltaTime;
+        else
+            dashAtkTimer = 0;
+
+        TickBufferTimers();
     }
 
-    private void GroundTouch()
+    void TickBufferTimers()
     {
-        if (pMov.xVel > pMov.baseMoveSpeed)
+        List<string> keys = new List<string>(bufferTimers.Keys);
+
+        foreach (string key in keys)
         {
-            pMov.lockSpeedTimer = pMov.lockSpeedTime;
+            if (bufferTimers[key] > 0)
+            {
+                bufferTimers[key] -= Time.deltaTime;
+                
+                if (bufferTimers[key] < 0)
+                {
+                    bufferTimers[key] = 0;
+                }
+            }
         }
     }
-    */
 }

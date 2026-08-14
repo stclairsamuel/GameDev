@@ -19,6 +19,7 @@ public class PlayerMovement2 : MonoBehaviour
     public float accelMod;
     public float dashAccelMod;
     public float moveSpeed;
+    public float rushSpeed;
 
     public float groundDrag;
     public float groundIdleDrag;
@@ -123,9 +124,17 @@ public class PlayerMovement2 : MonoBehaviour
     public void Move()
     {
         float speedToLock = moveSpeed;
+
+        if (myTracker.isRushing)
+            speedToLock = rushSpeed;
+
+
         bool lockSpeed = myTracker.lockSpeed;
 
         float acceleration = normalAccel + accelMod;
+
+        if (myTracker.isRushing)
+            acceleration = 200f;
 
         if (!lockSpeed)
         {
@@ -181,10 +190,26 @@ public class PlayerMovement2 : MonoBehaviour
     {
         float gravToUse = gravity;
 
-        bool useThrowDrag = myTracker.isThrowing || myTracker.holdingThrow;
+        bool useThrowGrav = myTracker.isThrowing || myTracker.holdingThrow;
 
-        if (useThrowDrag)
-            gravToUse = myTracker.GetDrag().x * 3f;
+        bool useDashAtkGrav = myTracker.dashAtkDragTimer > 0;
+
+        if (useThrowGrav)
+        {
+            float throwDragPercent = myTracker.throwStallTimer / myTracker.throwStallTime;
+
+            float gravPow = 4f;
+            float gravMult = 2f;
+
+            gravToUse = Mathf.Pow(1f - throwDragPercent, gravPow) * gravity * gravMult;
+        }
+
+        if (useDashAtkGrav)
+        {
+            float dashTimerPercent = myTracker.dashAtkDragTimer / myTracker.dashAtkDragTime;
+
+            gravToUse = (1f - dashTimerPercent) * gravity;
+        }
         
         if (myTracker.impactedWall && myTracker.touchingWall)
         {
